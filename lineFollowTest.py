@@ -71,7 +71,7 @@ def read_sensor(pin):
 try:
     # Start moving forward
     motors.setSpeeds(v2, v2)
-
+    moving = "S"
     color = [] #initialize color array
     while True: # Main loop
 
@@ -86,27 +86,27 @@ try:
         color.append(read_sensor(pin5))
         color.append(read_sensor(pin6))
 
-        if (color[2]== "w") and (color[3] == "w"): #middle is white
+        if (color[2]== 0) and (color[3] == 0): #middle is white
             # Departure from left curve: narrow radius
             if moving == "L":
                 motors.setSpeeds(-v1, v2)
-                moving = "L)"
+                moving = "L"
             # Departure from right curve: narrow radius
             elif moving == "R":
                 motors.setSpeeds(v2, -v1)
-                moving = "R)"
+                moving = "R"
 	    else:
 		print("Error! No valid moving value")
 
         # Swang to the right: turn left
-        elif (color == ["w", "b", 1, 0, 0, 0) or (color == [1, 1, 0, 0, 0, 0]) \
-              or (color == [0, 1, 0, 0, 0, 0]) or (color == [1, 0, 0, 0, 0, 0]) #left side (pins 1-3) sees black
+        elif (color[0:3] == [0, 2, 2]) or (color[0:3] == [2, 2, 0]) \
+              or (color[0:3] == [0, 2, 0]) or (color[0:3] == [2, 0, 0]) #left side (pins 1-3) sees black
             motors.setSpeeds(v1, v2)
             moving = "L"
 
         # Swang to the left: turn right
-        elif (color == [0, 0, 0, 1, 1, 0]) or (color == [0, 0, 0, 0, 1, 1]) \
-              or (color == [0, 0, 0, 0, 1, 0]) or (color == [0, 0, 0, 0, 0, 1]): #right side (pins 6-8) sees black
+        elif (color[3:6] == [2, 2, 0]) or (color[3:6] == [0, 2, 2]) \
+              or (color[3:6] == [0, 2, 0]) or (color[3:6] == [0, 0, 2]): #right side (pins 6-8) sees black
             motors.setSpeeds(v2, v1)
             moving = "R"
 
