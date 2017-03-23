@@ -29,15 +29,15 @@ GPIO.setmode(GPIO.BCM)
 #select pins to read sensor values from
 pin1 = 22
 pin2 = 23
-pin3 = 0
-pin4 = 1
-pin5 = 12
-pin6 = 13
+pin3 = 16 #0
+pin4 = 26 #1
+pin5 = 17 #12
+pin6 = 27 #13
 
 # Three speed constants for different purposes
 v3 = MAX_SPEED # = 480
-v2 = 100 #380
-v1 = 50 #150
+v2 = 50 #380
+v1 = 25 #150
 
 #define gray and black thresholds
 #color_thresh = 0.00035
@@ -61,7 +61,7 @@ def read_sensor(pin):
     if  GPIO.input(pin)==0:
         pulse_end = time.time() #when it hits zero stop the stopwatch
     pulse_duration = pulse_end - pulse_start
-    #print("duration:", pulse_duration) #print the time so you can adjust sensi$
+    print("duration:", pulse_duration) #print the time so you can adjust sensi$
     if pulse_duration > black_thresh: #adjust this value to change the sensitiv$
         color = 2 #sees black
 #    elif pulse_duration > gray_thresh:
@@ -76,7 +76,7 @@ def read_sensor(pin):
 # MAIN
 try:
     # Start moving forward
-    motors.setSpeeds(v2, v2)
+    #motors.setSpeeds(v2, v2)
     moving = "S"
     color = [] #initialize color array
     while True: # Main loop
@@ -93,6 +93,11 @@ try:
         color.append(read_sensor(pin6))
 	print(color)
         
+	if (color == [0,0,0,0,0,0]):
+	    print("stop! off grid")
+	    motors.setSpeeds(0,0)
+	    break
+
 	if (moving != "S") and (color[3]== 0) and (color[4] == 0): #middle is white
             # Departure from left curve: narrow radius
             if moving == "L":
@@ -127,7 +132,12 @@ try:
 	
 	color = [] #clear color array
 
+#except KeyboardInterrupt:
+#    motors.setSpeeds(0,0)
+#    GPIO.cleanup()
+	
 finally:
     # Stop motors in case of <Ctrl-C> or SIGTERM:
     motors.setSpeeds(0, 0)
+    GPIO.cleanup()
 
