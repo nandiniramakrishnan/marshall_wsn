@@ -18,7 +18,7 @@ sock.connect(server_address)
 
 try:
     # Send data
-    message = 'CHK1'
+    message = 'CHK2'
     print >>sys.stderr, 'Sending "%s"' % message
     sock.sendall(message)
     print "Waiting for ACK..."

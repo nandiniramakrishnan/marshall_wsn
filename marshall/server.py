@@ -1,5 +1,6 @@
 import socket
 import os
+import sys
 from threading import Thread
 import time
 import Queue
@@ -39,6 +40,7 @@ class UserInterfaceThread(Thread):
 
 class ClientThread(Thread):
     def __init__(self, client_sock, queue, curr_row, curr_col):
+        print("inited\n");
         Thread.__init__(self)
         self.client = client_sock
         self.queue = queue
@@ -53,11 +55,16 @@ class ClientThread(Thread):
                 command = self.queue.get()
                 self.client.sendall(command)
                 
-            data = self.client.recv(16)
-            if len(data) == 3:
-                self.curr_row = data[1]
-                self.curr_col = data[2]
-                print "New row = %c, new col = %c" % (self.curr_row, self.curr_col)
+            try:
+                data = self.client.recv(6)
+                if len(data) > 0:
+                    if (data[0] == 'P'):
+                        print data
+            except socket.error as ex:
+                if str(ex) == "[Errno 35] Resource temporarily unavailable":
+                    time.sleep(0.01)
+                    continue
+                raise ex
 
         self.client.close()
         return
@@ -143,7 +150,7 @@ class Server:
                         self.thread_list.append(new_thread)
                         new_thread.start()
                         client.sendall("ACK")
-                        print "sent ack"
+                        print("sent ack\n");
                     else:
                         break
 
