@@ -10,6 +10,12 @@ import time
 from sys import exit
 import wiringpi as wp2
 import RPi.GPIO as GPIO
+import signal
+import atexit
+
+def turnoff_motor():
+    motors.setSpeeds(0,0)
+atexit.register(turnoff_motor)
 
 # Signal handler for SIGTERM
 import signal
@@ -57,11 +63,11 @@ def read_sensor(pin):
     pulse_duration = pulse_end - pulse_start
     #print("duration:", pulse_duration) #print the time so you can adjust sensi$
     if pulse_duration > black_thresh: #adjust this value to change the sensitiv$
-        color = "b" #sees black
-    elif pulse_duration > gray_thresh:
-	color = "g" #sees gray
+        color = "2" #sees black
+#    elif pulse_duration > gray_thresh:
+#	color = "1" #sees gray
     else:
-        color= "w" #sees white
+        color= "0" #sees white
     return color
     #print ("%-6s %2d/%d " % 
     #    (moving, ingap, black_cntr))
@@ -112,6 +118,7 @@ try:
 
         # Else: go forward
         else:
+	    print("go straight")
             motors.setSpeeds(v2, v2)
             moving = "S"
 	
