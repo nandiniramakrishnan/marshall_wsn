@@ -2,17 +2,6 @@ import time
 import socket
 from threading import Thread
 import Queue
-from enum import Enum
-
-class Orientation(Enum):
-    NORTH = 1
-    SOUTH = 2
-    EAST = 3
-    WEST = 4
-
-curr_row = 0
-curr_col = 0
-curr_orientation = Orientation.NORTH
 
 # Line following code goes here!
 def line_following(direction):
@@ -88,7 +77,10 @@ try:
                     thread.start()
                     thread.join()
                     driving = False
-                    print drive_comms_queue.get()
+                    new_pos = drive_comms_queue.get()
+		    new_buf = [ 'P', str(new_pos[0]), str(new_pos[1]) ]
+		    new_msg = ''.join(new_buf)
+		    sock.sendall(new_msg)
 finally:
     print 'Closing socket'
     sock.close()
