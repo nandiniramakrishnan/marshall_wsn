@@ -10,6 +10,12 @@ import time
 from sys import exit
 import wiringpi as wp2
 import RPi.GPIO as GPIO
+import signal
+import atexit
+
+def turnoff_motor():
+    motors.setSpeeds(0,0)
+atexit.register(turnoff_motor)
 
 # Signal handler for SIGTERM
 import signal
@@ -57,11 +63,11 @@ def read_sensor(pin):
     pulse_duration = pulse_end - pulse_start
     #print("duration:", pulse_duration) #print the time so you can adjust sensi$
     if pulse_duration > black_thresh: #adjust this value to change the sensitiv$
-        color = "b" #sees black
-    elif pulse_duration > gray_thresh:
-	color = "g" #sees gray
+        color = 2 #sees black
+#    elif pulse_duration > gray_thresh:
+#	color = "1" #sees gray
     else:
-        color= "w" #sees white
+        color= 0 #sees white
     return color
     #print ("%-6s %2d/%d " % 
     #    (moving, ingap, black_cntr))
@@ -85,33 +91,37 @@ try:
         color.append(read_sensor(pin4))
         color.append(read_sensor(pin5))
         color.append(read_sensor(pin6))
-
-        if (color[2]== 0) and (color[3] == 0): #middle is white
+	print(color)
+        
+	if (moving != "S") and (color[3]== 0) and (color[4] == 0): #middle is white
             # Departure from left curve: narrow radius
             if moving == "L":
                 motors.setSpeeds(-v1, v2)
                 moving = "L"
+		print("off grid, go left!")
             # Departure from right curve: narrow radius
             elif moving == "R":
                 motors.setSpeeds(v2, -v1)
                 moving = "R"
-	    else:
-		print("Error! No valid moving value")
-
+		print("off grid, go right!")
+		
         # Swang to the right: turn left
         elif (color[0:3] == [0, 2, 2]) or (color[0:3] == [2, 2, 0]) \
-              or (color[0:3] == [0, 2, 0]) or (color[0:3] == [2, 0, 0]) #left side (pins 1-3) sees black
+              or (color[0:3] == [0, 2, 0]) or (color[0:3] == [2, 0, 0]): #left side (pins 1-3) sees black
+	    print("turn left")
             motors.setSpeeds(v1, v2)
             moving = "L"
 
         # Swang to the left: turn right
         elif (color[3:6] == [2, 2, 0]) or (color[3:6] == [0, 2, 2]) \
               or (color[3:6] == [0, 2, 0]) or (color[3:6] == [0, 0, 2]): #right side (pins 6-8) sees black
-            motors.setSpeeds(v2, v1)
+            print("turn right")
+	    motors.setSpeeds(v2, v1)
             moving = "R"
-
+         
         # Else: go forward
         else:
+	    print("go straight")
             motors.setSpeeds(v2, v2)
             moving = "S"
 	
