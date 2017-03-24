@@ -74,8 +74,8 @@ def check_prox():
             true_val = 2076/(raw_val-11)
         else:
             true_val = 0
-        print(true_val)
-        if (true_val < 14) and (true_val != 0):
+#        print(true_val)
+        if (true_val < 11) and (true_val != 0):
             block += 1
     if block > 3:
         #something is blocking!
@@ -92,6 +92,7 @@ def line_follow(curr_orient, direction):
     #motors.setSpeeds(v2, v2)
     #cal = calibrate()
     saw_white = 0
+    saw_line = 0
     moving = "S"
     #dir = "right"
     desired_orient = direction
@@ -100,16 +101,16 @@ def line_follow(curr_orient, direction):
         motors.setSpeeds(0,0)
         time.sleep(0.5)
     motors.setSpeeds(v2, v2)
-    time.sleep(0.2)
+    time.sleep(0.15)
 
 #    print("in line follow")
     true_val = 0
-    while color != [2,2,2,2,2,2]: # Main loop
+    while saw_line < 2: # Main loop
         # Repeat this loop every delay seconds
         #print("in line f while")
         #time.sleep (delay)
         color = get_color()
-        time.sleep(delay)
+        #time.sleep(delay)
 
         #check prox sensor
         while check_prox() == True:
@@ -117,7 +118,9 @@ def line_follow(curr_orient, direction):
             time.sleep(0.5)
 
         if color == [2,2,2,2,2,2]:
-            break
+            saw_line += 1
+
+        time.sleep(delay)
         #print(color)
 
 	#roll up past intersection
@@ -281,7 +284,7 @@ def turn(direction):
         motors.setSpeeds(speed, -speed)
     else:
         return
-    time.sleep(0.6)
+    time.sleep(0.5)
     color = get_color()
     #print(color)
     #print("off first line")
