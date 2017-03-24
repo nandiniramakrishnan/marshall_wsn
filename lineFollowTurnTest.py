@@ -126,29 +126,26 @@ def turnCalib(dir):
 
     return turn
 """
+def get_color():
+    color = []
+    #read sensor values
+    color.append(read_sensor(pin1))
+    color.append(read_sensor(pin2))
+    color.append(read_sensor(pin3))
+    color.append(read_sensor(pin4))
+    color.append(read_sensor(pin5))
+    color.append(read_sensor(pin6))
+    return color
+
 def rotate(curr_orient, desired_orient):
     while (curr_orient != desired_orient):
 	motors.setSpeeds(speed, -speed)
 	time.sleep(0.5)
-	color = []
-    	#read sensor values
-    	color.append(read_sensor(pin1))
-    	color.append(read_sensor(pin2))
-    	color.append(read_sensor(pin3))
-    	color.append(read_sensor(pin4))
-    	color.append(read_sensor(pin5))
-    	color.append(read_sensor(pin6))
+	color = get_color()
 	while (color[2:4] != [2, 2]) and (color[2:4] != [0, 2]) and (color[2:4] != [2, 0]):
             motors.setSpeeds(speed, -speed)
             time.sleep(0.1)
-            color = []
-            #read sensor values
-            color.append(read_sensor(pin1))
-            color.append(read_sensor(pin2))
-            color.append(read_sensor(pin3))
-            color.append(read_sensor(pin4))
-            color.append(read_sensor(pin5))
-            color.append(read_sensor(pin6))
+            color = get_color()
             print(color)
 	motors.setSpeeds(0,0)
 	if curr_orient == "N":
@@ -166,16 +163,7 @@ def rotate(curr_orient, desired_orient):
 def turn(direction):
     motors.setSpeeds(v2, v2)
     time.sleep(0.5)
-    color = []
-    #read sensor values
-    color.append(read_sensor(pin1))
-    color.append(read_sensor(pin2))
-    color.append(read_sensor(pin3))
-    color.append(read_sensor(pin4))
-    color.append(read_sensor(pin5))
-    color.append(read_sensor(pin6))
-    #while (color != [0,0,0,0,0,0]):
-   # while (color[4:6] != [2, 2]) and (color[4:6] != [0, 2]) and (color[4:6] != [2, 0]) :    
+    color = get_color()    
     if direction == "left":
         motors.setSpeeds(-speed, speed)
     elif direction == "right":
@@ -183,14 +171,7 @@ def turn(direction):
     else:
         return
     time.sleep(0.9)
-    color = []
-    #read sensor values
-    color.append(read_sensor(pin1))
-    color.append(read_sensor(pin2))
-    color.append(read_sensor(pin3))
-    color.append(read_sensor(pin4))
-    color.append(read_sensor(pin5))
-    color.append(read_sensor(pin6))
+    color = get_color() 
     #print(color)
     #print("off first line")
     while (color[2:4] != [2, 2]) and (color[2:4] != [0, 2]) and (color[2:4] != [2, 0]):
@@ -200,14 +181,7 @@ def turn(direction):
 	elif direction == "left":
 	    motors.setSpeeds(-speed, speed)
         time.sleep(0.1)
-        color = []
-        #read sensor values
-        color.append(read_sensor(pin1))
-        color.append(read_sensor(pin2))
-        color.append(read_sensor(pin3))
-        color.append(read_sensor(pin4))
-        color.append(read_sensor(pin5))
-        color.append(read_sensor(pin6))
+        color = get_color()
         print(color)
 
     motors.setSpeeds(0,0)
@@ -223,19 +197,12 @@ try:
     dir = "right"
     curr_orient = "N"
     desired_orient = "W"
-    color = [] #initialize color array
     while True: # Main loop
 
         # Repeat this loop every delay seconds
         time.sleep (delay)
 
-	#read sensor values
-        color.append(read_sensor(pin1)) 
-        color.append(read_sensor(pin2))
-        color.append(read_sensor(pin3))
-        color.append(read_sensor(pin4))
-        color.append(read_sensor(pin5))
-        color.append(read_sensor(pin6))
+	color = get_color()
 	print(color)
         
 	if (curr_orient != desired_orient):
