@@ -62,7 +62,7 @@ def read_sensor(pin):
     if  GPIO.input(pin)==0:
         pulse_end = time.time() #when it hits zero stop the stopwatch
     pulse_duration = pulse_end - pulse_start
-    print("duration:", pulse_duration) #print the time so you can adjust sensi$
+    #print("duration:", pulse_duration) #print the time so you can adjust sensi$
     if pulse_duration > black_thresh: #adjust this value to change the sensitiv$
         color = 2 #sees black
 #    elif pulse_duration > gray_thresh:
@@ -128,16 +128,65 @@ def turnCalib(dir):
 """
 
 def turn(direction):
-    motors.setSpeeds(speed, speed)
+    motors.setSpeeds(v2, v2)
     time.sleep(0.5)
-    
+    passed_init_line = 0
+    reacheed_final_line = 0
+    color = []
+    #read sensor values
+    color.append(read_sensor(pin1))
+    color.append(read_sensor(pin2))
+    color.append(read_sensor(pin3))
+    color.append(read_sensor(pin4))
+    color.append(read_sensor(pin5))
+    color.append(read_sensor(pin6))
+    #while (color != [0,0,0,0,0,0]):
+   # while (color[4:6] != [2, 2]) and (color[4:6] != [0, 2]) and (color[4:6] != [2, 0]) :    
     if direction == "left":
         motors.setSpeeds(-speed, speed)
     elif direction == "right":
         motors.setSpeeds(speed, -speed)
     else:
         return
-    time.sleep(1)
+    time.sleep(0.9)
+    color = []
+    #read sensor values
+    color.append(read_sensor(pin1))
+    color.append(read_sensor(pin2))
+    color.append(read_sensor(pin3))
+    color.append(read_sensor(pin4))
+    color.append(read_sensor(pin5))
+    color.append(read_sensor(pin6))
+    print(color)
+    print("off first line")
+    #while (color[1] != 2):
+    if direction == "right":
+    	while (color[0:2] != [2, 2]) and (color[0:2] != [0, 2]) and (color[0:2] != [2, 0]):
+            motors.setSpeeds(speed, -speed)
+	    time.sleep(0.1)
+            color = []
+            #read sensor values
+            color.append(read_sensor(pin1))
+            color.append(read_sensor(pin2))
+            color.append(read_sensor(pin3))
+            color.append(read_sensor(pin4))
+            color.append(read_sensor(pin5))
+            color.append(read_sensor(pin6))
+	    print(color)
+    elif direction == "left":
+        while (color[4:6] != [2, 2]) and (color[4:6] != [0, 2]) and (color[4:6] != [2, 0]):
+            motors.setSpeeds(-speed, speed)
+            time.sleep(0.1)
+            color = []
+            #read sensor values
+            color.append(read_sensor(pin1))
+            color.append(read_sensor(pin2))
+            color.append(read_sensor(pin3))
+            color.append(read_sensor(pin4))
+            color.append(read_sensor(pin5))
+            color.append(read_sensor(pin6))
+            print(color)
+
     motors.setSpeeds(0,0)
     return
 
@@ -146,8 +195,9 @@ try:
     # Start moving forward
     #motors.setSpeeds(v2, v2)
     #cal = calibrate()
+    saw_white = 0
     moving = "S"
-    dir = "right"
+    dir = "left"#"right"
     color = [] #initialize color array
     while True: # Main loop
 
@@ -164,9 +214,15 @@ try:
 	print(color)
         
 	if (color == [0,0,0,0,0,0]):
-	    print("stop! off grid")
-	    motors.setSpeeds(0,0)
-	    break
+            if (saw_white == 0):
+		print("off grid. not stopping")
+	        saw_white = 1
+   	    else:
+		motors.setSpeeds(0,0)
+		print("stop! off grid")
+	   	break
+	else:
+	    saw_white = 0
 	
 	if (color == [2,2,2,2,2,2]):
 	   print("reached intersection")
