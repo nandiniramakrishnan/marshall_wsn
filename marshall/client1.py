@@ -1,5 +1,12 @@
 import socket
+from threading import Thread
 import sys
+
+def drive(row, col):
+    print "Row = %d and col = %d" % row, col
+    # DRIVING CODE GOES HERE
+
+
 
 # Create a TCP/IP Socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -28,24 +35,14 @@ try:
         data = sock.recv(16)
         if data:
             print >>sys.stderr, 'Received "%s"' % data
+            if len(data) == 3:
+                row = data[1]
+                col = data[2]
+                thread = Thread(target = drive, args = (row, col))
+                thread.start()
+                thread.join()
 
 finally:
     print >>sys.stderr, 'Closing socket'
     sock.close()
 
-# NEW CODE AFTER THIS POINT
-'''
-class LineFollower(Thread):
-    itg
-
-class Node:
-    def __init__(self):
-
-    def run():
-
-
-if "__main__" == __name__:
-    node = Node()
-    node.run()
-    print "Terminated"
-'''

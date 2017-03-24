@@ -1,5 +1,5 @@
 import socket
-import sys
+import os
 from threading import Thread
 import time
 import Queue
@@ -19,8 +19,9 @@ class UserInterfaceThread(Thread):
             command = raw_input("> ")
             if command.lower() == "quit":
                 print "Quitting marshall..."
+                self.queue.put(command)
             elif command.lower() == "help":
-                print "-\nEnter a node followed by its destination's row and column\nCommand format: <node-index><row><col>\nExample: 012 # Node 0, Row 1, Col 2\n-"
+                print "-\nINSTRUCTIONS:\nEnter a node followed by its destination's row and column\nCommand format: <node-index><row><col>\nExample: 012 # Node 0, Row 1, Col 2\n-"
             elif len(command) != 3:
                 print "Invalid length. Try again."
             elif command[0] < '0' or command[0] > '2':
@@ -31,7 +32,6 @@ class UserInterfaceThread(Thread):
                 print "Invalid column. Try again."
             else:
                 # Adding proper commands to the queue
-                print "this is a proper command"
                 self.queue.put(command)
             # SEND MESSAGE TO NODE
 
@@ -92,14 +92,16 @@ class Server:
         queue2 = Queue.Queue()
         print "Server is listening for incoming connections"
         ui_thread = UserInterfaceThread(queue)
+        self.thread_list.append(ui_thread)
         ui_thread.start()
         try:
             while True:
 
                 # If queue is not empty
                 if not queue.empty():
-                    print "there are commands in the queue"
                     command = queue.get()
+                    if command.lower() == 'quit':
+                        break
                     if command[0] == '0':
                         queue0.put(command)
                     elif command[0] == '1':
@@ -112,11 +114,6 @@ class Server:
                 except socket.timeout:
                     time.sleep(1)
                     continue
-                # CHK-ACK portion. Get node number here
-#                received = False
-                print "accepted socket conn"
-                # Receive acknowledgement from marshall
- #               while not received:
                 try:
                     data = client.recv(4)
                 except socket.error as ex:
@@ -125,24 +122,18 @@ class Server:
                         continue
                     raise ex
                 if data:
-                    #received = True
-                    print data
                     if data[0:3] == "CHK":
-                        print "received chk"
                         if data[3] == '0':
                             new_thread = ClientThread(client, queue0)
                         elif data[3] == '1':
                             new_thread = ClientThread(client, queue1)
                         elif data[3] == '2':
                             new_thread = ClientThread(client, queue2)
-                        print "created thread"
 
                         self.thread_list.append(new_thread)
                         new_thread.start()
                         client.sendall("ACK")
-                        print "sent ack"
                     else:
-                        print "--- BROKE!!"
                         break
 
                 for thread in self.thread_list:
@@ -154,11 +145,11 @@ class Server:
 
         for thread in self.thread_list:
             thread.join(1.0)
-
         
         self.sock.close()
 
 if "__main__" == __name__:
     server = Server()
     server.run()
-    print "Terminated"
+    print "\nTerminated"
+    os._exit(0)
