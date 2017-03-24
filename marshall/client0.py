@@ -3,6 +3,11 @@ import socket
 from threading import Thread
 import Queue
 
+#initialize client0 at location (0,0) facing East
+curr_row = 0
+curr_col = 0
+curr_orient = "E" 
+
 # Line following code goes here!
 def line_following(direction):
     return
@@ -11,6 +16,16 @@ def line_following(direction):
 # Communication with DRIVING thread will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 def drive(row, col, queue):
+    path = path_plan(curr_row, curr_col, row, col)
+    if (path['E'] > 0):
+	rotate(curr_orient, "E")
+    elif (path['W'] > 0):
+	rotate(curr_orient, "W")
+    else:
+	if (path['N'] > 0):
+	    rotate(curr_orient, "N")
+	elif (path['S'] > 0):
+	    rotate(curr_orient, "S")
 
     #num_intersections_hor = abs(row - curr_row)
     #num_intersections_ver = abs(col - curr_col)
