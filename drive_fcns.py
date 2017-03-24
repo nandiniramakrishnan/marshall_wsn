@@ -28,9 +28,9 @@ pin6 = 26 #13
 
 # Three speed constants for different purposes
 v3 = MAX_SPEED # = 480
-v2 = 60 #380
-v1 = 30 #150
-speed = 60
+v2 = 56 #380
+v1 = 28 #150
+speed = 56
 
 #define gray and black thresholds
 #color_thresh = 0.00035
@@ -241,7 +241,7 @@ def turn(direction):
         motors.setSpeeds(speed, -speed)
     else:
         return
-    time.sleep(0.7)
+    time.sleep(0.6)
     color = get_color()
     #print(color)
     #print("off first line")
