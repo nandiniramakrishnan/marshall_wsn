@@ -1,3 +1,4 @@
+
 """ Raspberry Pi Python Code for QTR-1RC IR Sensor
     by tobyonline copyleft 2016 robot-resource.blogspot.com
 http://tobyonline.co.uk """
@@ -5,17 +6,16 @@ http://tobyonline.co.uk """
 import RPi.GPIO as GPIO
 import time
 GPIO.setmode(GPIO.BCM)
+color_thresh = 0.00045
 
-color_thresh = 0.00035
-
-pin1 = 22 #assumes you've connected the IR Out wire to GPIO19
-pin2 = 23 #assumes you've connected the IR Out wire to GPIO20
-pin3 = 0 #assumes you've connected the IR Out wire to GPIO21
-pin4 = 1
-pin5 = 5
-pin6 = 6
-pin7 = 12
-pin8 = 13
+pin1 = 17 #assumes you've connected the IR Out wire to GPIO19
+pin2 = 27 #assumes you've connected the IR Out wire to GPIO20
+pin3 = 22#0 #assumes you've connected the IR Out wire to GPIO21
+pin4 = 23#1
+pin5 = 16
+pin6 = 26
+#pin7 = 12
+#pin8 = 13
 
 def irsensor(pin): #function to get value from IR sensor
     GPIO.setup(pin, GPIO.OUT) #Set your chosen pin to an output
@@ -51,8 +51,8 @@ while True:
     color.append(irsensor(pin4))
     color.append(irsensor(pin5))
     color.append(irsensor(pin6))
-    color.append(irsensor(pin7))
-    color.append(irsensor(pin8))
+    #color.append(irsensor(pin7))
+    #color.append(irsensor(pin8))
 
     print color
     time.sleep(1) #pause for 1 second before repeating, use ctrl+z to stop
