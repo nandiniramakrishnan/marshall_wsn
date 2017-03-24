@@ -14,7 +14,14 @@ import signal
 import atexit
 import copy
 import operator
+import Adafruit_GPIO.SPI as SPI
+import Adafruit_MCP3008
 
+CLK = 8
+MISO = 11
+MOSI = 20#24
+CS = 21#25
+mcp = Adafruit_MCP3008.MCP3008(clk=CLK, cs=CS, miso=MISO, mosi=MOSI)
 
 # GPIO pins of sensors
 GPIO.setmode(GPIO.BCM)
@@ -49,11 +56,35 @@ def update_row(curr_row, direction):
 	return curr_row
 
 def update_col(curr_col, direction):
-	if direction == "W":
-		curr_col = curr_col - 1
-	elif direction == "E":
-		curr_col = curr_col + 1
-	return curr_col
+    if direction == "W":
+        curr_col = curr_col - 1
+    elif direction == "E":
+        curr_col = curr_col + 1
+    return curr_col
+
+
+def check_prox():
+    #avg_list = [0,0,0]
+    block = 0
+    for i in range(0,5):
+        raw_val = mcp.read_adc(0)
+#        print("reading prox value!")
+#        print(raw_val)
+        if (raw_val > 11):
+            true_val = 2076/(raw_val-11)
+        else:
+            true_val = 0
+        print(true_val)
+        if (true_val < 14) and (true_val != 0):
+            block += 1
+    if block > 3:
+        #something is blocking!
+        print("something is too close!")
+        return True
+    else:
+        return False
+
+
 # Line following code goes here!
 # This function follows a line straight until an intersection is reached
 def line_follow(curr_orient, direction):
@@ -65,19 +96,28 @@ def line_follow(curr_orient, direction):
     #dir = "right"
     desired_orient = direction
     color = []
-
+    while check_prox() == True:
+        motors.setSpeeds(0,0)
+        time.sleep(0.5)
     motors.setSpeeds(v2, v2)
     time.sleep(0.2)
 
 #    print("in line follow")
-
+    true_val = 0
     while color != [2,2,2,2,2,2]: # Main loop
         # Repeat this loop every delay seconds
         #print("in line f while")
-        time.sleep (delay)
+        #time.sleep (delay)
         color = get_color()
-	if color == [2,2,2,2,2,2]:
-	    break
+        time.sleep(delay)
+
+        #check prox sensor
+        while check_prox() == True:
+            motors.setSpeeds(0,0)
+            time.sleep(0.5)
+
+        if color == [2,2,2,2,2,2]:
+            break
         #print(color)
 
 	#roll up past intersection
