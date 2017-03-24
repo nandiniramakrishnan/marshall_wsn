@@ -49,15 +49,21 @@ def line_follow(curr_orient, direction):
     #dir = "right"
     desired_orient = direction
     color = []
+
+    motors.setSpeeds(v2, v2)
+    time.sleep(0.5)
+
+
+
     while color != [2,2,2,2,2,2]: # Main loop
         # Repeat this loop every delay seconds
         time.sleep (delay)
         color = get_color()
+	if color == [2,2,2,2,2,2]:
+	    break
         print(color)
 
 	#roll up past intersection
-	motors.setSpeeds(v2, v2)
-        time.sleep(0.5)
 
 
         if (curr_orient != desired_orient):
@@ -89,7 +95,7 @@ def line_follow(curr_orient, direction):
 		    turn("right")
 		    src += 1
 
-#            curr_orient = desired_orient
+            curr_orient = desired_orient
 
         if (color == [0,0,0,0,0,0]):
             if (saw_white == 0):
@@ -146,6 +152,7 @@ def line_follow(curr_orient, direction):
         color = [] #clear color array
 
     print("intersection reached")
+    motors.setSpeeds(0,0)
     return 0
 
 # Read sensor input and print some diagnostics

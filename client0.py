@@ -14,11 +14,18 @@ curr_orient = "E"
 # Communication with DRIVING thread will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 def drive(row, col, queue, curr_row, curr_col, curr_orient):
-    path = DF.path_plan(curr_row, curr_col, int(row), int(col))
+    row = int(row)
+    col = int(col)
+    print("row %d" % row)
+    print("col %d" % col)
+    print("curr_row %d" % curr_row)
+    print("curr_col %d" % curr_col)
+
+    path = DF.path_plan(curr_row, curr_col, row, col)
     
     #follow path to destination
     #follows E/W and then N/S
-    while (curr_row != row) and (curr_col != col):   
+    while (curr_row != row) or (curr_col != col):   
 
         if (path['E'] > 0):
 	        if (DF.line_follow(curr_orient, "E") == 0):
@@ -62,7 +69,9 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 		        print("went off grid, mission failed")
 		        return
 
+
     # Send update to main thread for transmitting to Marshall
+    print("returning from drive()")
     return
 
 
@@ -110,8 +119,11 @@ try:
                     
                     thread = Thread(target = drive, args = (drive_row, drive_col, drive_comms_queue, curr_row, curr_col, curr_orient))
                     driving = True
+
                     thread.start()
+		    print("thread started")
                     thread.join()
+		    print("thread joined")
                     driving = False
                     new_pos = drive_comms_queue.get()
 		    new_buf = [ 'P', str(new_pos[0]), str(new_pos[1]) ]
