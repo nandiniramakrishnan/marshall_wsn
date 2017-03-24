@@ -126,12 +126,46 @@ def turnCalib(dir):
 
     return turn
 """
+def rotate(curr_orient, desired_orient):
+    while (curr_orient != desired_orient):
+	motors.setSpeeds(speed, -speed)
+	time.sleep(0.5)
+	color = []
+    	#read sensor values
+    	color.append(read_sensor(pin1))
+    	color.append(read_sensor(pin2))
+    	color.append(read_sensor(pin3))
+    	color.append(read_sensor(pin4))
+    	color.append(read_sensor(pin5))
+    	color.append(read_sensor(pin6))
+	while (color[2:4] != [2, 2]) and (color[2:4] != [0, 2]) and (color[2:4] != [2, 0]):
+            motors.setSpeeds(speed, -speed)
+            time.sleep(0.1)
+            color = []
+            #read sensor values
+            color.append(read_sensor(pin1))
+            color.append(read_sensor(pin2))
+            color.append(read_sensor(pin3))
+            color.append(read_sensor(pin4))
+            color.append(read_sensor(pin5))
+            color.append(read_sensor(pin6))
+            print(color)
+	motors.setSpeeds(0,0)
+	if curr_orient == "N":
+	    curr_orient = "E"
+	elif curr_orient == "E":
+	    curr_orient = "S"
+	elif curr_orient == "S":
+	    curr_orient = "W"
+	elif curr_orient == "W":
+	    curr_orient = "N"
+	print(curr_orient)
+    return
+
 
 def turn(direction):
     motors.setSpeeds(v2, v2)
     time.sleep(0.5)
-    passed_init_line = 0
-    reacheed_final_line = 0
     color = []
     #read sensor values
     color.append(read_sensor(pin1))
@@ -187,6 +221,8 @@ try:
     saw_white = 0
     moving = "S"
     dir = "right"
+    curr_orient = "N"
+    desired_orient = "W"
     color = [] #initialize color array
     while True: # Main loop
 
@@ -202,6 +238,10 @@ try:
         color.append(read_sensor(pin6))
 	print(color)
         
+	if (curr_orient != desired_orient):
+	    rotate(curr_orient, desired_orient)
+	    curr_orient = desired_orient
+
 	if (color == [0,0,0,0,0,0]):
             if (saw_white == 0):
 		print("off grid. not stopping")
