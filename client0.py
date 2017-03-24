@@ -8,23 +8,24 @@ import RPi.GPIO as GPIO
 import os
 
 # Server address
-server_address = ('128.237.138.97', 10000)
+server_address = ('128.237.217.77', 10000)
 
 class MarshallCommsThread(Thread):
-    def __init__(self, sock, queue):
+    def __init__(self, sock, queue, node_id):
         Thread.__init__(self)
-        self.queue = queue
         self.sock = sock
+        self.queue = queue
+        self.node_id = node_id
 
     def run(self):
+        
         while True:
             if not self.queue.empty():
                 print "drive queue is not empty!"
                 new_pos = self.queue.get()
                 curr_row = new_pos[0]
                 curr_col = new_pos[1]
-                self.curr_orient = new_pos[2]
-                new_buf = [ str(self.node_id), str(self.curr_row), str(self.curr_col) ]
+                new_buf = [ str(self.node_id), str(curr_row), str(curr_col) ]
                 new_msg = ''.join(new_buf)
                 print new_msg
                 self.sock.sendall(new_msg)
@@ -70,7 +71,6 @@ class DriverThread(Thread):
                     print("went off grid, mission failed")
                     return
                 self.curr_orient = "W"
-
         while (self.curr_row != self.dest_row):
             if (path['N'] > 0):
                 if (DF.line_follow(self.curr_orient, "N") == 0):
@@ -81,7 +81,6 @@ class DriverThread(Thread):
                     print("went off grid, mission failed")
                     return
                 self.curr_orient = "N"
-
             elif (path['S'] > 0):
                 if (DF.line_follow(self.curr_orient, "S") == 0):
                     path['S'] = path['S']-1
@@ -91,6 +90,7 @@ class DriverThread(Thread):
                     print("went off grid, mission failed")
                     return
                 self.curr_orient = "S"
+        
         print "drivings done in drivethread"
 	return
 
@@ -114,7 +114,7 @@ class Node:
         received_ack = False
         drive_comms_queue = Queue.Queue()
         command_queue = Queue.Queue()
-        send_thread = MarshallCommsThread(self.sock, drive_comms_queue)  
+        send_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id)  
         send_thread.start()
         # Send CHK message to reveal yourself to the Marshall
         print 'Sending "%s"' % chk_msg
