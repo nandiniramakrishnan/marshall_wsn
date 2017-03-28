@@ -128,6 +128,7 @@ def get_color():
     return color
 
 def rotate(curr_orient, desired_orient):
+    #robot must be directly on intersection
     while (curr_orient != desired_orient):
 	motors.setSpeeds(speed, -speed)
 	time.sleep(0.5)
@@ -151,6 +152,7 @@ def rotate(curr_orient, desired_orient):
 
 
 def turn(direction):
+   #for use while driving
     motors.setSpeeds(v2, v2)
     time.sleep(0.5)
     color = get_color()    
