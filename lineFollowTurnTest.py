@@ -27,12 +27,12 @@ signal.signal(signal.SIGTERM, sigterm_handler)
 # GPIO pins of sensors
 GPIO.setmode(GPIO.BCM)
 #select pins to read sensor values from
-pin1 = 22
-pin2 = 23
-pin3 = 16 #0
-pin4 = 26 #1
-pin5 = 17 #12
-pin6 = 27 #13
+pin1 = 17
+pin2 = 27
+pin3 = 22 #0
+pin4 = 23 #1
+pin5 = 16 #12
+pin6 = 26 #13
 
 # Three speed constants for different purposes
 v3 = MAX_SPEED # = 480
@@ -267,9 +267,9 @@ try:
 	
 	color = [] #clear color array
 
-#except KeyboardInterrupt:
-#    motors.setSpeeds(0,0)
-#    GPIO.cleanup()
+except KeyboardInterrupt:
+    motors.setSpeeds(0,0)
+    GPIO.cleanup()
 	
 finally:
     # Stop motors in case of <Ctrl-C> or SIGTERM:
