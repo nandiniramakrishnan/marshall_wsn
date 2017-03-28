@@ -27,12 +27,12 @@ signal.signal(signal.SIGTERM, sigterm_handler)
 # GPIO pins of sensors
 GPIO.setmode(GPIO.BCM)
 #select pins to read sensor values from
-pin1 = 22
-pin2 = 23
-pin3 = 16 #0
-pin4 = 26 #1
-pin5 = 17 #12
-pin6 = 27 #13
+pin1 = 17
+pin2 = 27
+pin3 = 22 #0
+pin4 = 23 #1
+pin5 = 16 #12
+pin6 = 26 #13
 
 # Three speed constants for different purposes
 v3 = MAX_SPEED # = 480
@@ -157,35 +157,24 @@ def turn(direction):
     color.append(read_sensor(pin4))
     color.append(read_sensor(pin5))
     color.append(read_sensor(pin6))
-    print(color)
-    print("off first line")
-    #while (color[1] != 2):
-    if direction == "right":
-    	while (color[0:2] != [2, 2]) and (color[0:2] != [0, 2]) and (color[0:2] != [2, 0]):
-            motors.setSpeeds(speed, -speed)
-	    time.sleep(0.1)
-            color = []
-            #read sensor values
-            color.append(read_sensor(pin1))
-            color.append(read_sensor(pin2))
-            color.append(read_sensor(pin3))
-            color.append(read_sensor(pin4))
-            color.append(read_sensor(pin5))
-            color.append(read_sensor(pin6))
-	    print(color)
-    elif direction == "left":
-        while (color[4:6] != [2, 2]) and (color[4:6] != [0, 2]) and (color[4:6] != [2, 0]):
-            motors.setSpeeds(-speed, speed)
-            time.sleep(0.1)
-            color = []
-            #read sensor values
-            color.append(read_sensor(pin1))
-            color.append(read_sensor(pin2))
-            color.append(read_sensor(pin3))
-            color.append(read_sensor(pin4))
-            color.append(read_sensor(pin5))
-            color.append(read_sensor(pin6))
-            print(color)
+    #print(color)
+    #print("off first line")
+    while (color[2:4] != [2, 2]) and (color[2:4] != [0, 2]) and (color[2:4] != [2, 0]):
+        
+	if direction == "right":
+	    motors.setSpeeds(speed, -speed)
+	elif direction == "left":
+	    motors.setSpeeds(-speed, speed)
+        time.sleep(0.1)
+        color = []
+        #read sensor values
+        color.append(read_sensor(pin1))
+        color.append(read_sensor(pin2))
+        color.append(read_sensor(pin3))
+        color.append(read_sensor(pin4))
+        color.append(read_sensor(pin5))
+        color.append(read_sensor(pin6))
+        print(color)
 
     motors.setSpeeds(0,0)
     return
@@ -197,7 +186,7 @@ try:
     #cal = calibrate()
     saw_white = 0
     moving = "S"
-    dir = "left"#"right"
+    dir = "right"
     color = [] #initialize color array
     while True: # Main loop
 
