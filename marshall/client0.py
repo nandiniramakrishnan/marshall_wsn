@@ -45,12 +45,12 @@ def drive(row, col, queue):
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to server
-server_address = ('localhost', 10000)
+server_address = ('128.237.191.52', 10000)
 print 'Connecting to %s port %s' % server_address
 sock.connect(server_address)
 
 driving = False
-node_id = 'CHK0'
+node_id = 'CHK000'
 received_ack = False
 drive_comms_queue = Queue.Queue()
 command_queue = Queue.Queue()
@@ -75,8 +75,14 @@ try:
                 row = data[1]
                 col = data[2]
                 command_queue.put((row, col))
+
+
+
                 if driving == False:
                     (drive_row, drive_col) = command_queue.get()
+                    # Send "ready for path" message to Marshall
+                    # Receive directions and keep pushing into drive_comms_queue
+                    
                     thread = Thread(target = drive, args = (drive_row, drive_col, drive_comms_queue))
                     driving = True
                     thread.start()

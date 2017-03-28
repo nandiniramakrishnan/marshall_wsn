@@ -38,11 +38,13 @@ class UserInterfaceThread(Thread):
         return
 
 class ClientThread(Thread):
-    def __init__(self, client_sock, queue):
+    def __init__(self, client_sock, queue, curr_row, curr_col):
         Thread.__init__(self)
         self.client = client_sock
         self.queue = queue
-
+        self.curr_row = curr_row
+        self.curr_col = curr_col
+    
     def run(self):
 
         # Start receiving commands from marshall
@@ -50,7 +52,13 @@ class ClientThread(Thread):
             if not self.queue.empty():
                 command = self.queue.get()
                 self.client.sendall(command)
-        
+                
+            data = self.client.recv(16)
+            if len(data) == 3:
+                self.curr_row = data[1]
+                self.curr_col = data[2]
+                print "New row = %c, new col = %c" % (self.curr_row, self.curr_col)
+
         self.client.close()
         return
 
@@ -115,7 +123,7 @@ class Server:
                     time.sleep(1)
                     continue
                 try:
-                    data = client.recv(4)
+                    data = client.recv(6)
                 except socket.error as ex:
                     if str(ex) == "[Errno 35] Resource temporarily unavailable":
                         time.sleep(0.01)
@@ -123,16 +131,19 @@ class Server:
                     raise ex
                 if data:
                     if data[0:3] == "CHK":
+                        curr_row = data[4]
+                        curr_col = data[5]
                         if data[3] == '0':
-                            new_thread = ClientThread(client, queue0)
+                            new_thread = ClientThread(client, queue0, curr_row, curr_col)
                         elif data[3] == '1':
-                            new_thread = ClientThread(client, queue1)
+                            new_thread = ClientThread(client, queue1, curr_row, curr_col)
                         elif data[3] == '2':
-                            new_thread = ClientThread(client, queue2)
+                            new_thread = ClientThread(client, queue2, curr_row, curr_col)
 
                         self.thread_list.append(new_thread)
                         new_thread.start()
                         client.sendall("ACK")
+                        print "sent ack"
                     else:
                         break
 
