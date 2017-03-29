@@ -40,7 +40,7 @@ delay = 0.001 #0.05
 
 # Line following code goes here!
 # This function follows a line straight until an intersection is reached
-def line_follow(direction):
+def line_follow(direction, curr_orient, curr_row, curr_col):
     # Start moving forward
     #motors.setSpeeds(v2, v2)
     #cal = calibrate()
@@ -56,8 +56,35 @@ def line_follow(direction):
         print(color)
 
         if (curr_orient != desired_orient):
-            rotate(curr_orient, desired_orient)
-            curr_orient = desired_orient
+	    if curr_orient == "N":
+		src = 1
+	    elif curr_orient == "E":
+		src = 2
+	    elif curr_orient == "S":
+		src = 3
+	    else:
+		src = 4
+	    if desired_orient == "N":
+		dst = 1
+	    elif desired_orient == "E":
+		dst = 2
+	    elif desired_orient == "S":
+		dst = 3
+	    else:
+		dst = 4
+
+	    while (dst - src) != 0:
+	        if (dst-src) < 0:
+		    #rotate left
+		    turn("left")
+		    src--
+
+	        elif (dst-src) > 0:
+		    #rotate right
+		    turn("right")
+		    src++
+
+#            curr_orient = desired_orient
 
         if (color == [0,0,0,0,0,0]):
             if (saw_white == 0):
