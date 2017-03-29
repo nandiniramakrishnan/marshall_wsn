@@ -2,7 +2,7 @@ import time
 import socket
 from threading import Thread
 import Queue
-
+import drive_fcns as DF
 #initialize client0 at location (0,0) facing East
 curr_row = 0
 curr_col = 0
@@ -20,42 +20,36 @@ def drive(row, col, queue):
     while (curr_row != row) and (curr_col != col):   
 
         if (path['E'] > 0):
-	    if (line_follow("E") == 0):
-	        path['E'] = path['E']-1	
-   	        cur_col = col_col + 1
-	    else:
-		print("went off grid, mission failed")
-		return
+	        if (DF.line_follow("E") == 0):
+	            path['E'] = path['E']-1	
+   	            curr_col = curr_col + 1
+	        else:
+		        print("went off grid, mission failed")
+		        return
 
         elif (path['W'] > 0):
-	    if (line_follow("W") == 0):
-	        path['W'] = path['W']-1
-	        cur_col = cur_col-1
-	    else:
-		print("went off grid, mission failed")
-		return    
+	        if (DF.line_follow("W") == 0):
+	            path['W'] = path['W']-1
+	            curr_col = curr_col-1
+	        else:
+		        print("went off grid, mission failed")
+		        return    
 
         elif (path['N'] > 0):
-	    if (line_follow("N") == 0):
-	    	path['N'] = path['N']-1
-	        cur_row = cur_row-1
-	    else:
-		print("went off grid, mission failed")
-		return
+	        if (DF.line_follow("N") == 0):
+	    	    path['N'] = path['N']-1
+	            curr_row = curr_row-1
+	        else:
+		        print("went off grid, mission failed")
+		        return
     
         elif (path['S'] > 0):
-	    if (line_follow("S") == 0):
-	        path['S'] = path['S']-1
-	        cur_row = cur_row+1
-	    else:
-		print("went off grid, mission failed")
-		return
-    
-    #num_intersections_hor = abs(row - curr_row)
-    #num_intersections_ver = abs(col - curr_col)
-       
-         print "Row = %c and col = %c" % (row, col)
-    
+	        if (DF.line_follow("S") == 0):
+	            path['S'] = path['S']-1
+	            curr_row = curr_row+1
+	        else:
+		        print("went off grid, mission failed")
+		        return
 
     # Send update to main thread for transmitting to Marshall
     queue.put((row, col))
