@@ -1,3 +1,4 @@
+from pololu_drv8835_rpi import motors
 import time 
 import socket
 from threading import Thread
@@ -13,7 +14,7 @@ curr_orient = "E"
 # Communication with DRIVING thread will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 def drive(row, col, queue, curr_row, curr_col, curr_orient):
-    path = DF.path_plan(curr_row, curr_col, row, col)
+    path = DF.path_plan(curr_row, curr_col, int(row), int(col))
     
     #follow path to destination
     #follows E/W and then N/S
@@ -69,7 +70,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to server
-server_address = ('128.237.197.18', 10000)
+server_address = ('128.237.178.6', 10000)
 print 'Connecting to %s port %s' % server_address
 sock.connect(server_address)
 
