@@ -55,6 +55,11 @@ def line_follow(curr_orient, direction):
         color = get_color()
         print(color)
 
+	#roll up past intersection
+	motors.setSpeeds(v2, v2)
+        time.sleep(0.5)
+
+
         if (curr_orient != desired_orient):
 	    if curr_orient == "N":
 		src = 1
@@ -258,8 +263,6 @@ def rotate(curr_orient, desired_orient):
 
 def turn(direction):
    #for use while driving
-    motors.setSpeeds(v2, v2)
-    time.sleep(0.5)
     color = get_color()    
     if direction == "left":
         motors.setSpeeds(-speed, speed)

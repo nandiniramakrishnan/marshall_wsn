@@ -23,8 +23,8 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 	        if (DF.line_follow(curr_orient, "E") == 0):
 	            path['E'] = path['E']-1	
    	            curr_col = curr_col + 1
-		    queue.put((curr_row, curr_col, curr_orient))
-    	        
+		    curr_orient = "E"
+		    queue.put((curr_row, curr_col, curr_orient))    	        
 		else:
 		        print("went off grid, mission failed")
 		        return
@@ -33,8 +33,8 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 	        if (DF.line_follow(curr_orient, "W") == 0):
 	            path['W'] = path['W']-1
 	            curr_col = curr_col-1
+		    curr_orient = "W"
 		    queue.put((curr_row, curr_col, curr_orient))
-    
 	        else:
 		        print("went off grid, mission failed")
 		        return    
@@ -43,7 +43,8 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 	        if (DF.line_follow(curr_orient, "N") == 0):
 	    	    path['N'] = path['N']-1
 	            curr_row = curr_row-1
-		queue.put((curr_row, curr_col, curr_orient))
+		    curr_orient = "N"
+		    queue.put((curr_row, curr_col, curr_orient))
     
 	        else:
 		        print("went off grid, mission failed")
@@ -53,7 +54,8 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 	        if (DF.line_follow(curr_orient, "S") == 0):
 	            path['S'] = path['S']-1
 	            curr_row = curr_row+1
-		queue.put((curr_row, curr_col, curr_orient))
+		    curr_orient = "S"
+		    queue.put((curr_row, curr_col, curr_orient))
   
 	        else:
 		        print("went off grid, mission failed")
