@@ -9,6 +9,11 @@ curr_row = 0
 curr_col = 0
 curr_orient = "E" 
 
+def wanna_quit(queue):
+    cmd = raw_input()
+    if cmd == 'q':
+        queue.put(cmd)
+
 
 # This is the target function of all DRIVING threads. Only DRIVING to happen here.
 # Communication with DRIVING thread will happen with argument "queue".
@@ -86,6 +91,7 @@ sock.connect(server_address)
 driving = False
 node_id = 'CHK000'
 received_ack = False
+quitQueue = Queue.Queue()
 drive_comms_queue = Queue.Queue()
 command_queue = Queue.Queue()
 try:
@@ -100,7 +106,10 @@ try:
         if data:
             received_ack = True
             print 'Received "%s"' % data
+    quitThread = Thread(target = wanna_quit, args = (quitQueue))
     while True:
+        if not quitQueue.empty():
+            break
         data = sock.recv(16)
         if data:
             print 'Received "%s"' % data
@@ -134,4 +143,5 @@ finally:
     sock.close()
     motors.setSpeeds(0, 0)
     GPIO.cleanup()
+    os._exit(0)
 
