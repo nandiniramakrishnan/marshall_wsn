@@ -32,7 +32,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
     
     #follow path to destination
     #follows E/W and then N/S
-    while (curr_row != row) or (curr_col != col):   
+    while (curr_col != col):   
 
         if (path['E'] > 0):
 	        if (DF.line_follow(curr_orient, "E") == 0):
@@ -52,9 +52,10 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 		    queue.put((curr_row, curr_col, curr_orient))
 	        else:
 		        print("went off grid, mission failed")
-		        return    
-
-        elif (path['N'] > 0):
+		        return
+    
+    while (curr_row != row):
+        if (path['N'] > 0):
 	        if (DF.line_follow(curr_orient, "N") == 0):
 	    	    path['N'] = path['N']-1
 	            curr_row = curr_row-1
@@ -86,7 +87,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to server
-server_address = ('128.237.178.6', 10000)
+server_address = ('128.237.202.197', 10000)
 print 'Connecting to %s port %s' % server_address
 sock.connect(server_address)
 
@@ -135,9 +136,9 @@ try:
                     driving = True
 
                     thread.start()
-		            print("thread started")
+		    print("thread started")
                     thread.join()
-		            print("thread joined")
+		    print("thread joined")
                     new_pos = drive_comms_queue.get()
                     curr_row = new_pos[0]
                     curr_col = new_pos[1]
