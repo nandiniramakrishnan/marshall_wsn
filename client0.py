@@ -4,6 +4,8 @@ import socket
 from threading import Thread
 import Queue
 import drive_fcns as DF
+import RPi.GPIO as GPIO
+
 #initialize client0 at location (0,0) facing East
 curr_row = 0
 curr_col = 0
@@ -109,6 +111,9 @@ try:
     quitThread = Thread(target = wanna_quit, args = (quitQueue))
     while True:
         if not quitQueue.empty():
+            quitThread.join()
+            if driving == True:
+                thread.join()
             break
         data = sock.recv(16)
         if data:
