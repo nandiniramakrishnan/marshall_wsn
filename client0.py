@@ -140,13 +140,14 @@ try:
                     thread.join()
 		    print("thread joined")
                     driving = False
-            new_pos = drive_comms_queue.get()
-            curr_row = new_pos[0]
-            curr_col = new_pos[1]
-            curr_orient = new_pos[2]
-		    new_buf = [ 'P', str(curr_row), str(curr_col) ]
-		    new_msg = ''.join(new_buf)
-		    sock.sendall(new_msg)
+		if not drive_comms_queue.empty():
+		    new_pos = drive_comms_queue.get()
+                    curr_row = new_pos[0]
+                    curr_col = new_pos[1]
+                    curr_orient = new_pos[2]
+	            new_buf = [ 'P', str(curr_row), str(curr_col) ]
+	            new_msg = ''.join(new_buf)
+	            sock.sendall(new_msg)
 finally:
     print 'Closing socket'
     sock.close()
