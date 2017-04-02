@@ -40,6 +40,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
    	            curr_col = curr_col + 1
 		    curr_orient = "E"
 		    queue.put((curr_row, curr_col, curr_orient))    	        
+		    print "pushing into queue!!"
 		else:
 		        print("went off grid, mission failed")
 		        return
@@ -50,6 +51,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 	            curr_col = curr_col-1
 		    curr_orient = "W"
 		    queue.put((curr_row, curr_col, curr_orient))
+		    print "pushing into queue!!"
 	        else:
 		        print("went off grid, mission failed")
 		        return
@@ -61,6 +63,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 	            curr_row = curr_row-1
 		    curr_orient = "N"
 		    queue.put((curr_row, curr_col, curr_orient))
+		    print "pushing into queue!!"
     
 	        else:
 		        print("went off grid, mission failed")
@@ -72,6 +75,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient):
 	            curr_row = curr_row+1
 		    curr_orient = "S"
 		    queue.put((curr_row, curr_col, curr_orient))
+		    print "pushing into queue!!"
   
 	        else:
 		        print("went off grid, mission failed")
@@ -136,15 +140,16 @@ try:
                     driving = True
 
                     thread.start()
-		    print("thread started")
+		            print("thread started")
                     thread.join()
-		    print("thread joined")
+		            print("thread joined")
                     driving = False
-		if not drive_comms_queue.empty():
-		    new_pos = drive_comms_queue.get()
-                    curr_row = new_pos[0]
-                    curr_col = new_pos[1]
-                    curr_orient = new_pos[2]
+		    if not drive_comms_queue.empty():
+		        print "the queue isn't empty!!"
+                new_pos = drive_comms_queue.get()
+                curr_row = new_pos[0]
+                curr_col = new_pos[1]
+                curr_orient = new_pos[2]
 	            new_buf = [ 'P', str(curr_row), str(curr_col) ]
 	            new_msg = ''.join(new_buf)
 	            sock.sendall(new_msg)
