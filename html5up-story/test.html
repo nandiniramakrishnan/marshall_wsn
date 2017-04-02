@@ -1,0 +1,203 @@
+<!DOCTYPE HTML>
+<!--
+	Story by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+ 
+	Note: Only needed for demo purposes. Delete for production sites.
+ -->
+<html>
+    <head>
+        <title>Marshall: An 18748 Project</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="assets/css/main.css" />
+    </head>
+    <body>
+        
+        <!-- Wrapper -->
+        <div id="wrapper" class="divided">
+            
+            <!-- Banner -->
+            <section class="banner style1 orient-left content-align-left image-position-right fullscreen onload-image-fade-in onload-content-fade-right">
+                <div class="content">
+                    <h1>Marshall</h1>
+                    <p class="major">A multi-robot coordination project</p>
+                    <p>Marshall is an autonomous V2I protocol, developed for simulating wireless communication between vehicles.</p>
+                </div>
+                <div class="image">
+                    <img src="images/node.jpg" alt="" />
+                </div>
+            </section>
+            
+            <!-- Spotlight -->
+            <section class="spotlight style1 orient-right content-align-left image-position-right onscroll-image-fade-in" id="first">
+                <div class="content">
+                    <h2>Motivation</h2>
+                    <p>Autonomous driving is one of the most researched and publicised technologies today, which is being pursued by several top-tier companies such as Google, Uber, Tesla and others in the public and private sector. The 5.9 GHz band is currently allocated to the Dedicated Short Range Communications Service (DSRCS) of the Intelligent Transportation Systems (ITS) Radio service, with the goal of incorporating technology and advanced electronics into the nation's surface transportation infrastructure to improve traveler safety, improve air quality, and reduce emissions [1]. 94% of vehicle accidents each year are estimated to be due to human error, so automation in driving could save lives [2]. Some of the biggest new technologies being developed in the 5.9 GHz band are vehicle-to-vehicle (V2V) and vehicle-to-infrastructure (V2I) communication both known collectively as V2X. The DOT estimates that V2X could eliminate up to 80% of crashes per year caused by unimpaired drivers [3]. There are countless opportunities for the improvement of traffic with V2X, including both pollution reduction from better traffic flow patterns, to increased safety from the prevention of accidents. In this project, we aim to design a wireless V2X protocol simulated on a multi-robot setting as a proof of concept of the benefits of V2X technology in traffic patterns.</p>
+                </div>
+                <div class="image">
+                    <img src="images/genericcarcomms.png" alt="" />
+                </div>
+            </section>
+            
+            <!-- Spotlight -->
+            <section class="spotlight style1 orient-left content-align-left image-position-center onscroll-image-fade-in" id="first">
+                <div class="content">
+                    <h2>Goals</h2>
+                    <p>We would like to simulate autonomous vehicles using miniature robots. This will involve implementation of line following and path planning on a 2D grid. We will also implement a collision avoidance protocol. For our reach goals, the robots will obey traffic rules, including stopping at stoplights, altering routes due to detours, and handling emergency vehicle situations.</p>
+                </div>
+                <div class="image">
+                    <img src="images/genericcarcomms.png" alt="" />
+                </div>
+            </section>
+            
+            <!-- Additional Elements -->
+            <section class="wrapper style1 align-center">
+                <div class="inner">
+                    <h2>System design</h2>
+                    <p>Below is our system design</p>
+                    <div class="index align-left">
+                        <section>
+                            <header>
+                                <h3>Node Components</h3>
+                            </header>
+                            <div class="content">
+                                <p> Raspberry Pi 3: Each robot will be controlled with a raspberry pi. Software implemented on the raspberry pi will determine the path that each robot takes to arrive to its destination. The raspberry pis will be powered by a 10000mAh power bank.<p>
+                                <p> Raspberry Pi Motor Driver: The motor driver is for movement control of each robot. The motor driver will be used to control the speed of the robot wheels to go straight and make turns. The motors are powered using a 9V battery.<p>
+                                <p> QTR-8RC Reflectance Sensor Array: The reflectance sensor array will be used for line following purposes. Using the readings from the sensors, the robots will be following a black line on a white surface. <p>
+                                <p> Sharp IR Sensor: These proximity sensors will be used on each robot for backup collision avoidance purposes.<p>
+                                <span class="image fit"><img src="images/system1.png" alt="" /></span>
+                            </div>
+                        </section>
+                        <section>
+                            <header>
+                                <h3>Marshall</h3>
+                            </header>
+                            <div class="content">
+                                <p> The Marshall will be a laptop and is a central point for communication. The user will be able to input their desired destination on the laptop, which Marshall will send to the node. Marshall will also be receiving location information from each node for collision avoidance purposes. Communication with the nodes will be done via Wi-Fi. For initial connection setup, a node will try to connect to Marshall. Marshall will send back an acknowledgement and a connection will be established.<p>
+                        
+                                <span class="image fit"><img src="images/image2.png" alt="" /></span>
+                            </div>
+                        </section>
+                        <section>
+                            <header>
+                                <h3>Test bed</h3>
+                            </header>
+                            <div class="content">
+                                <p> The test bed will be contructed with white foam-core poster board. Black electrical tape will be used to create a grid of squares with 4-way intersections. The black lines are the roads for the robots, and the contrast between the black lines and white background will be used for line following. At the intersections, robots will be able to either proceed straight or make 90 degree turns. Marshall will send a destination to a node with a known starting location, and the robot will be able to navigate along the grid to its destination.<p>
+                                <span class="image fit"><img src="images/path1.png" alt="" /></span>
+
+                                
+                            </div>
+                        </section>
+                        <!-- Table -->
+                        <section>
+                            <header>
+                                <h3>Table</h3>
+                            </header>
+                            <div class="content">
+                                
+                                <h4>Work item distribution</h4>
+                                <div class="table-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Work item</th>
+                                                <th>Description</th>
+                                                <th>Team members</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Raspberry Pi Setup</td>
+                                                <td>Raspberry Pis will be set up so that they will be able to control the robot wheels with the motor driver, interface with sensors, and communicate with one another over Wifi.</td>
+                                                <td>Kat & Nandini</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Robot/Grid Construction and Motor Control</td>
+                                                <td>Robots and the gridded path they will follow will be constructed. The robots will also be equipped with a Raspberry Pi 3, a motor driver, and the reflectance sensor array. Software to control the robot wheels using information from the reflective sensor array will be implemented.</td>
+                                                <td>Brigitte & Kat</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Sharp IR Sensors</td>
+                                                <td> Sharp IR sensors will be tested and evaluated for their performance with reflective shields made of different materials. These sensors, along with appropriate reflective shields, will be incorporated with the robots so that one robot can determine if it might collide with another robot.</td>
+                                                <td>Brigitte</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Vehicle Communication</td>
+                                                <td>Communication tasks for each robot will be implemented. This includes transmitting location information and sensor information through Wi-Fi to the Marshall node. The robots will also be programmed to receive commands from the Marshall node.</td>
+                                                <td>Brigitte & Nandini</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Marshall Communication</td>
+                                                <td>Communication tasks for the Marshall node will be implemented. This includes transmitting destination information to the robots and potential collision messages. The Marshall node will also be programmed to receive location and sensor information from the vehicles.</td>
+                                                <td>Kat & Nandini</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="2"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Items -->
+            <section class="wrapper style1 align-center">
+                <div class="inner">
+                    <h2>Team members</h2>
+                    <div class="items style1 medium onscroll-fade-in">
+                        <section>
+                            <span class="image">
+                                <img src="images/brigitte.jpg" alt style="
+                                    width: 100%;
+                                    " />
+                            </span>
+                            <p>Brigitte Quirk</p>
+                        </section>
+                        <section>
+                            <span class="image">
+                                <img src="images/katherine.jpg" alt style="
+                                width: 100%;
+                                " />
+                            </span>
+                            <p>Katherine Wang</p>
+                        </section>
+                        <section>
+                            <span class="image">
+                                <img src="images/nandini.png" alt style="
+                                width: 100%;
+                                " />
+                            </span>
+                            <p>Nandini Ramakrishnan</p>
+                        </section>
+                    </div>
+                </div>
+            </section>
+            <!-- Footer -->
+            <footer class="wrapper style1 align-center">
+                <div class="inner">
+                    <p>&copy; Marshall. Design: <a href="https://html5up.net">HTML5 UP</a>.</p>
+                </div>
+            </footer>
+        </div>
+        
+        <!-- Scripts -->
+        <script src="assets/js/jquery.min.js"></script>
+        <script src="assets/js/jquery.scrollex.min.js"></script>
+        <script src="assets/js/jquery.scrolly.min.js"></script>
+        <script src="assets/js/skel.min.js"></script>
+        <script src="assets/js/util.js"></script>
+        <script src="assets/js/main.js"></script>
+        
+        <!-- Note: Only needed for demo purposes. Delete for production sites. -->
+        <script src="assets/js/demo.js"></script>
+        
+    </body>
+</html>

@@ -61,7 +61,7 @@ def line_follow(curr_orient, direction):
         color = get_color()
 	if color == [2,2,2,2,2,2]:
 	    break
-        print(color)
+        #print(color)
 
 	#roll up past intersection
 
@@ -85,15 +85,22 @@ def line_follow(curr_orient, direction):
 		dst = 4
 
 	    while (dst - src) != 0:
-	        if (dst-src) < 0:
-		    #rotate left
-		    turn("left")
-		    src -= 1
-
-	        elif (dst-src) > 0:
-		    #rotate right
-		    turn("right")
-		    src += 1
+	        if (abs(dst-src) < 3):
+		    if (dst-src) < 0:
+		    	#rotate left
+		    	turn("left")
+		   	src -= 1
+	            elif (dst-src) > 0:
+		    	#rotate right
+		    	turn("right")
+		    	src += 1
+		else:
+		    if ((dst-src) < 0):
+			turn("right")
+			src -= 3
+		    else:
+			turn("left")
+			src += 3
 
             curr_orient = desired_orient
 
@@ -107,15 +114,6 @@ def line_follow(curr_orient, direction):
                 return 1
         else:
             saw_white = 0
-
-            #if (color == [2,2,2,2,2,2]):
-            #   print("reached intersection")
-            #   if dir == "left":
-            #       turn("left")
-            #   elif dir == "right":
-            #       turn("right")
-            #   else:
-            #       print("passing intersection")
 
         if (moving != "S") and (color[3]== 0) and (color[4] == 0): #middle is white
             # Departure from left curve: narrow radius
@@ -132,20 +130,20 @@ def line_follow(curr_orient, direction):
         # Swang to the right: turn left
         elif (color[0:3] == [0, 2, 2]) or (color[0:3] == [2, 2, 0]) \
               or (color[0:3] == [0, 2, 0]) or (color[0:3] == [2, 0, 0]): #left side (pins 1-3) sees $
-            print("turn left")
+            #print("turn left")
             motors.setSpeeds(v1, v2)
             moving = "L"
 
         # Swang to the left: turn right
         elif (color[3:6] == [2, 2, 0]) or (color[3:6] == [0, 2, 2]) \
               or (color[3:6] == [0, 2, 0]) or (color[3:6] == [0, 0, 2]): #right side (pins 6-8) sees$
-            print("turn right")
+            #print("turn right")
             motors.setSpeeds(v2, v1)
             moving = "R"
 
         # Else: go forward
         else:
-            print("go straight")
+            #print("go straight")
             motors.setSpeeds(v2, v2)
             moving = "S"
 
