@@ -51,6 +51,8 @@ class ClientThread(Thread):
 
         # Start receiving commands from marshall
         while True:
+            # if client sock is not up
+            
             if not self.queue.empty():
                 command = self.queue.get()
                 self.client.sendall(command)
@@ -91,12 +93,14 @@ class Server:
             try:
                 # Create the socket
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 self.sock.bind(server_address)
                 # Socket can handle upto 3 incoming connections (for each node)
-                self.sock.listen(3)
+                self.sock.listen(5)
                 server_up = True
                 break
-            except:
+            except Exception as msg :
+                print msg
                 print 'Socket connection error... Waiting 10 seconds to retry.'
                 del self.sock
                 time.sleep(10)
@@ -116,6 +120,9 @@ class Server:
                 if not queue.empty():
                     command = queue.get()
                     if command.lower() == 'quit':
+                        for thread in self.thread_list:
+                            thread.join(1.0)
+                        self.sock.close()
                         break
                     if command[0] == '0':
                         queue0.put(command)
