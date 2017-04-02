@@ -135,12 +135,15 @@ try:
                     driving = True
 
                     thread.start()
-		    print("thread started")
+		            print("thread started")
                     thread.join()
-		    print("thread joined")
-                    driving = False
+		            print("thread joined")
                     new_pos = drive_comms_queue.get()
-		    new_buf = [ 'P', str(new_pos[0]), str(new_pos[1]) ]
+                    curr_row = new_pos[0]
+                    curr_col = new_pos[1]
+                    curr_orient = new_pos[2]
+                    driving = False
+		    new_buf = [ 'P', str(curr_row), str(curr_col) ]
 		    new_msg = ''.join(new_buf)
 		    sock.sendall(new_msg)
 finally:
