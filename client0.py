@@ -7,6 +7,7 @@ import drive_fcns as DF
 import RPi.GPIO as GPIO
 
 #initialize client0 at location (0,0) facing East
+node_num = '0'
 curr_row = 0
 curr_col = 0
 curr_orient = "E" 
@@ -45,7 +46,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient, sock):
             while not queue.empty():
                 queue.get()
             queue.put((curr_row, curr_col, curr_orient))    	        
-            new_buf = [ 'P', str(curr_row), str(curr_col) ]
+            new_buf = [ node_num, str(curr_row), str(curr_col) ]
             new_msg = ''.join(new_buf)
             sock.sendall(new_msg)
 
@@ -60,7 +61,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient, sock):
             while not queue.empty():
                 queue.get()
             queue.put((curr_row, curr_col, curr_orient))    	        
-            new_buf = [ 'P', str(curr_row), str(curr_col) ]
+            new_buf = [ node_num, str(curr_row), str(curr_col) ]
             new_msg = ''.join(new_buf)
             sock.sendall(new_msg)
     
@@ -76,7 +77,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient, sock):
             while not queue.empty():
                 queue.get()
             queue.put((curr_row, curr_col, curr_orient))    	        
-            new_buf = [ 'P', str(curr_row), str(curr_col) ]
+            new_buf = [ node_num, str(curr_row), str(curr_col) ]
             new_msg = ''.join(new_buf)
             sock.sendall(new_msg)
     
@@ -91,7 +92,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient, sock):
             while not queue.empty():
                 queue.get()
             queue.put((curr_row, curr_col, curr_orient))    	        
-            new_buf = [ 'P', str(curr_row), str(curr_col) ]
+            new_buf = [ node_num, str(curr_row), str(curr_col) ]
             new_msg = ''.join(new_buf)
             sock.sendall(new_msg)
 
@@ -105,7 +106,7 @@ def drive(row, col, queue, curr_row, curr_col, curr_orient, sock):
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to server
-server_address = ('128.237.202.197', 10000)
+server_address = ('128.237.131.154', 10000)
 print 'Connecting to %s port %s' % server_address
 sock.connect(server_address)
 
