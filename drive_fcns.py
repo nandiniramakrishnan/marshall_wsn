@@ -83,21 +83,28 @@ def line_follow(curr_orient, direction):
 		dst = 3
 	    else:
 		dst = 4
+	    print("dst=")
+	    print(dst)
+	    print("src=")
+	    print(src)
 
 	    while (dst - src) != 0:
-	        if (dst-src) < 0:
-		    if ((dst-src)== -3):
-			src -= 2
-		    #rotate left
-		    turn("left")
-		    src -= 1
-
-	        elif (dst-src) > 0:
-		    if ((dst-src) == 3):
-			src += 2
-		    #rotate right
-		    turn("right")
-		    src += 1
+	        if (abs(dst-src) < 3):
+		    if (dst-src) < 0:
+		    	#rotate left
+		    	turn("left")
+		   	src -= 1
+	            elif (dst-src) > 0:
+		    	#rotate right
+		    	turn("right")
+		    	src += 1
+		else:
+		    if ((dst-src) < 0):
+			turn("right")
+			src -= 3
+		    else:
+			turn("left")
+			src += 3
 
             curr_orient = desired_orient
 
