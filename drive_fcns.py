@@ -86,11 +86,15 @@ def line_follow(curr_orient, direction):
 
 	    while (dst - src) != 0:
 	        if (dst-src) < 0:
+		    if ((dst-src)== -3):
+			src -= 2
 		    #rotate left
 		    turn("left")
 		    src -= 1
 
 	        elif (dst-src) > 0:
+		    if ((dst-src) == 3):
+			src += 2
 		    #rotate right
 		    turn("right")
 		    src += 1
