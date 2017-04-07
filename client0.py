@@ -101,10 +101,7 @@ class Node:
                 received_ack = True
                 print 'Received "%s"' % data
     
-        # Now you're ready to receive commands and drive around
         while True:
-            # if socket connection is not alive, try to get it back
-            
             # Listen data
             data = sock.recv(16)
             # You received a command!
