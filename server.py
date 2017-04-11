@@ -39,13 +39,14 @@ class UserInterfaceThread(Thread):
         return
 
 class ClientThread(Thread):
-    def __init__(self, client_sock, queue, curr_row, curr_col):
+    def __init__(self, client_sock, queue, curr_row, curr_col, node_id):
         print("inited\n");
         Thread.__init__(self)
         self.client = client_sock
         self.queue = queue
         self.curr_row = curr_row
         self.curr_col = curr_col
+        self.node_id = node_id
     
     def run(self):
 
@@ -147,11 +148,11 @@ class Server:
                         curr_row = data[4]
                         curr_col = data[5]
                         if data[3] == '0':
-                            new_thread = ClientThread(client, queue0, curr_row, curr_col)
+                            new_thread = ClientThread(client, queue0, curr_row, curr_col, data[3])
                         elif data[3] == '1':
-                            new_thread = ClientThread(client, queue1, curr_row, curr_col)
+                            new_thread = ClientThread(client, queue1, curr_row, curr_col, data[3])
                         elif data[3] == '2':
-                            new_thread = ClientThread(client, queue2, curr_row, curr_col)
+                            new_thread = ClientThread(client, queue2, curr_row, curr_col, data[3])
 
                         self.thread_list.append(new_thread)
                         new_thread.start()
