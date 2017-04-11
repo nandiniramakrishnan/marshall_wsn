@@ -58,10 +58,9 @@ class ClientThread(Thread):
                 self.client.sendall(command)
                 
             try:
-                data = self.client.recv(6)
+                data = self.client.recv(3)
                 if len(data) > 0:
-                    if (data[0] == 'P'):
-                        print data
+                    print data
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
                     time.sleep(0.01)
