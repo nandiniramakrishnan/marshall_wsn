@@ -6,6 +6,9 @@ import time
 import Queue
 
 server_address = ('', 10000)
+node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0}, /
+              '1':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0}, /
+              '2':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0}}
 
 class UserInterfaceThread(Thread):
     def __init__(self, queue):
@@ -59,8 +62,26 @@ class ClientThread(Thread):
                 self.client.sendall(command)
                 
             try:
-                data = self.client.recv(3)
+                data = self.client.recv(6)
                 if len(data) > 0:
+                    if self.node_id = '0':
+                        node_state['0']['curr_row'] = data[1]
+                        node_state['0']['curr_col'] = data[2]
+                        node_state['0']['curr_orient'] = data[3]
+                        node_state['0']['next_row'] = data[4]
+                        node_state['0']['next_col'] = data[5]
+                    elif self.node_id =='1'
+                        node_state['1']['curr_row'] = data[1]
+                        node_state['1']['curr_col'] = data[2]
+                        node_state['1']['curr_orient'] = data[3]
+                        node_state['1']['next_row'] = data[4]
+                        node_state['1']['next_col'] = data[5]
+                    elif self.node_id =='2'
+                        node_state['2']['curr_row'] = data[1]
+                        node_state['2']['curr_col'] = data[2]
+                        node_state['2']['curr_orient'] = data[3]
+                        node_state['2']['next_row'] = data[4]
+                        node_state['2']['next_col'] = data[5]
                     print data
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
@@ -138,11 +159,25 @@ class Server:
                     continue
                 try:
                     data = client.recv(6)
+                    
                 except socket.error as ex:
                     if str(ex) == "[Errno 35] Resource temporarily unavailable":
                         time.sleep(0.01)
                         continue
                     raise ex
+                
+                if ((node_state['0']['next_row'] == node_state['1']['next_row']) and \
+                    (node_state['0']['next_col'] == node_state['1']['next_col'])):
+                    #collision for node 0 and 1
+
+                elif ((node_state['0']['next_row'] == node_state['2']['next_row']) and \
+                      (node_state['0']['next_col'] == node_state['2']['next_col'])):
+                    #collision for node 0 and 2
+
+                elif ((node_state['1']['next_row'] == node_state['2']['next_row']) and \
+                      (node_state['1']['next_col'] == node_state['2']['next_col'])):
+                    #collision for node 1 and 2
+
                 if data:
                     if data[0:3] == "CHK":
                         curr_row = data[4]
