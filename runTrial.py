@@ -76,6 +76,8 @@ class DriverThread(Thread):
 
         #follow path to destination
         #follows E/W and then N/S
+
+        #put next location information in queue before moving
         if (self.curr_col != self.dest_col):
             if (path['E'] > 0):
                 self.next_col = self.next_col + 1
@@ -88,12 +90,13 @@ class DriverThread(Thread):
                 self.next_row = self.next_row + 1
         self.queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
 
+        #travel E/W
         while (self.curr_col != self.dest_col):
             if (path['E'] > 0):
                 if (DF.line_follow(self.curr_orient, "E") == 0):
                     if (path['E'] != 1):
                         self.next_col = self.next_col + 1
-                    else:
+                    else: #on last E move
                         if (path['N'] > 0):
                             self.next_row = self.next_row - 1
                         elif (path['S'] > 0):
@@ -108,7 +111,7 @@ class DriverThread(Thread):
                 if (DF.line_follow(self.curr_orient, "W") == 0):
                     if (path['W'] != 1):
                         self.next_col = self.next_col - 1
-                    else:
+                    else: #on last W move
                         if (path['N'] > 0):
                             self.next_row = self.next_row - 1
                         elif (path['S'] > 0):
