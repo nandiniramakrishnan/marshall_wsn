@@ -292,6 +292,7 @@ def turn(direction):
     motors.setSpeeds(0,0)
     return
 
+#old path_plan
 def path_plan(curr_row, curr_col, new_row, new_col):
     path = {'N':0,'E':0,'W':0,'S':0}
     diff_row = new_row - curr_row
@@ -310,17 +311,17 @@ def path_plan(curr_row, curr_col, new_row, new_col):
 	path['W'] = abs(diff_col)
     return path
 
-def get_dir(path):
-    dir = "straight"
-    if (path['E'] > 0):
-	if (path['N'] > 0):
-	    dir = "left"
-	elif (path['S'] > 0):
-	    dir = "right"
-    elif (path['W'] > 0):
-        if (path['N'] > 0):
-            dir = "right"
-        elif (path['S'] > 0):
-            dir = "left"
-    return dir
-
+#new plan_path code
+def plan_path(curr_row, curr_col, new_row, new_col):
+    path = []
+    diff_row = new_row - curr_row
+    diff_col = new_col - curr_col
+    if (diff_col > 0): #drive east
+	    path.append(('E', abs(diff_col)))
+    elif (diff_col < 0): #drive west
+	    path.append(('W', abs(diff_col)))
+    if (diff_row > 0): #drive South
+	    path.append(('S', abs(diff_row)))
+    elif (diff_row < 0): #drive north
+	    path.append(('N', abs(diff_row)))
+    return path
