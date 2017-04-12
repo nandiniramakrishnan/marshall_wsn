@@ -67,7 +67,7 @@ class DriverThread(Thread):
                 self.curr_orient = "S"
             self.queue.put((self.curr_row, self.curr_col, self.curr_orient))
         print "drivings done in drivethread"
-	return
+    #return
 
 
     def runTrial(self):
@@ -75,80 +75,77 @@ class DriverThread(Thread):
         path = DF.path_plan(self.curr_row, self.curr_col, self.dest_row, self.dest_col)
 
         #follow path to destination
-        #follows E/W and then N/S
+        #follows E/W and then N/S by default
 
         #put next location information in queue before moving
-        if (self.curr_col != self.dest_col):
-            if (path['E'] > 0):
+        if (len(path) > 0):
+            if (path[0][0] == 'E'):
                 self.next_col = self.next_col + 1
-            elif (path['W'] > 0):
+            elif (path[0][0] == 'W'):
                 self.next_col = self.next_col - 1
-        elif (self.curr_row != self.dest_row):
-            if (path['N'] > 0):
+            elif (path[0][0] == 'N'):
                 self.next_row = self.next_row - 1
-            elif (path['S'] > 0):
+            elif (path[0][0] == 'S'):
                 self.next_row = self.next_row + 1
         self.queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
 
-        #travel E/W
-        while (self.curr_col != self.dest_col):
-            if (path['E'] > 0):
-                if (DF.line_follow(self.curr_orient, "E") == 0):
-                    if (path['E'] != 1):
-                        self.next_col = self.next_col + 1
-                    else: #on last E move
-                        if (path['N'] > 0):
+        while (len(path) > 0): #still traveling to destination
+            if (len(path) == 1):
+                if (DF.line_follow(self.curr_orient, path[0][0]) == 0): #drive to next intersection
+                    if (path[0][1] != 1): #update next location until last move
+                        if (path[0][0] == 'E'):
+                            self.next_col = self.next_col + 1
+                        elif (path[0][0] == 'W'):
+                            self.next_col = self.next_col - 1
+                        elif (path[0][0] == 'N'):
                             self.next_row = self.next_row - 1
-                        elif (path['S'] > 0):
+                        elif (path[0][0] == 'S'):
                             self.next_row = self.next_row + 1
-                    path['E'] = path['E']-1	
-                    self.curr_col = self.curr_col + 1
+                    path[0]=(path[0][0], path[0][1] - 1) #decrement direction number
+                    #update curr_col
+                    if (path[0][0] == 'E'):
+                        self.curr_col = self.curr_col + 1
+                    elif (path[0][0] == 'W'):
+                        self.curr_col = self.curr_col - 1
+                    elif (path[0][0] == 'N'):
+                        self.curr_row = self.curr_row - 1
+                    elif (path[0][0] == 'S'):
+                        self.curr_row = self.curr_row + 1
                 else:
                     print("went off grid, mission failed")
                     return
-                self.curr_orient = "E"
-            elif (path['W'] > 0):
-                if (DF.line_follow(self.curr_orient, "W") == 0):
-                    if (path['W'] != 1):
-                        self.next_col = self.next_col - 1
-                    else: #on last W move
-                        if (path['N'] > 0):
+                self.curr_orient = path[0][0]
+        
+            elif (len(path) > 1):
+                if (DF.line_follow(self.curr_orient, path[0][0]) == 0): #drive to next intersection
+                    if (path[0][1] != 1): #next_col changes until last east/west
+                        if (path[0][0] == 'E'):
+                            self.next_col = self.next_col + 1
+                        elif (path[0][0] == 'W'):
+                            self.next_col = self.next_col - 1
+                    else: #last east/west, go north/south next
+                        if (path[1][0] == 'N'):
                             self.next_row = self.next_row - 1
-                        elif (path['S'] > 0):
+                        elif (path[1][0] == 'S'):
                             self.next_row = self.next_row + 1
-                    path['W'] = path['W']-1	
-                    self.curr_col = self.curr_col - 1
+                    path[0]=(path[0][0], path[0][1] - 1) #decrement direction number
+                    #update curr_col
+                    if (path[0][0] == 'E'):
+                        self.curr_col = self.curr_col + 1
+                    elif (path[0][0] == 'W'):
+                        self.curr_col = self.curr_col - 1
                 else:
                     print("went off grid, mission failed")
                     return
-                self.curr_orient = "W"
+                self.curr_orient = path[0][0]
             self.queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
 
+            if (path[0][1] == 0): #remove path instruction from list
+                path = path[1:] #remove first item in list
 
-        while (self.curr_row != self.dest_row):
-            if (path['N'] > 0):
-                if (DF.line_follow(self.curr_orient, "N") == 0):
-                    if (path['N'] != 1):
-                        self.next_row = self.next_row - 1 
-                    path['N'] = path['N']-1
-                    self.curr_row = self.curr_row - 1
-                else:
-                    print("went off grid, mission failed")
-                    return
-                self.curr_orient = "N"
-            elif (path['S'] > 0):
-                if (DF.line_follow(self.curr_orient, "S") == 0):
-                    if (path['S'] != 1):
-                        self.next_row = self.next_row +1
-                    path['S'] = path['S']-1
-                    self.curr_row = self.curr_row + 1
-                else:
-                    print("went off grid, mission failed")
-                    return
-                self.curr_orient = "S"
-            self.queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
         print "drivings done in drivethread"
-	return
+        return
+
 
 class Node:
     def __init__(self, node_id, drivingState, curr_row, curr_col, curr_orient):
