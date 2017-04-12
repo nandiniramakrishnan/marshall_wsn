@@ -46,8 +46,40 @@ class DriverThread(Thread):
         self.dest_col = int(dest_col)
         self.queue = queue
 
-    def run(self):
-        # Obtain directions to the destination and store in path
+    def run(self):   
+	   # Obtain directions to the destination and store in path
+        path = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col)
+
+        #follow path to destination
+        #by following the elements in path from left to right
+		#while the destination has not been reached
+        while ((self.cur_col != self.dest_col) or (self.cur_row != self.dest_row)) and (len(path) > 0):
+			direction = path[0][0] #will be "N" "S" "E" or "W"
+			length = int(path[0][1]) #some number of roads to drive in direction
+
+			while (length > 0):
+				if (DF.line_follow(self.curr_orient, direction) == 0):
+					#move was successful, update position and direction
+					length = length - 1
+					self.curr_row = update_row(curr_row, direction)
+					self.curr_col = update_col(curr_col, direction)
+				    self.curr_orient = direction
+					#send current position to marshall
+					self.queue.put((self.curr_row, self.curr_col, self.curr_orient))
+				
+				else:
+					#move was unsuccessful
+					print("went off grid, mission failed")
+				    return
+			
+			#update path once movement in direction is complete by removing first element
+			path = path[1:]
+		print("Driving done in drivethread")
+		return
+       
+	   '''
+	   #OLD run() code
+	   # Obtain directions to the destination and store in path
         path = DF.path_plan(self.curr_row, self.curr_col, self.dest_row, self.dest_col)
 
         #follow path to destination
@@ -93,6 +125,7 @@ class DriverThread(Thread):
         
         print "drivings done in drivethread"
 	return
+	'''
 
 class Node:
     def __init__(self, node_id, drivingState, curr_row, curr_col, curr_orient):
@@ -160,3 +193,19 @@ if "__main__" == __name__:
     print "\nTerminated"
     os._exit(0)
 
+#functions for drivethread, move these ASAP to drive_fcns
+
+
+def update_row(curr_row, direction):
+	if direction == "N":
+		curr_row = curr_row - 1
+	else if direction == "S":
+		curr_row = curr_row + 1
+	return curr_row
+
+def update_col(curr_col, direction):
+	if direction == "W":
+		curr_col = curr_col - 1
+	else if direction == "E":
+		curr_col = curr_col + 1
+	return curr_col
