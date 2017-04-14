@@ -6,9 +6,9 @@ import time
 import Queue
 
 server_address = ('', 10000)
-node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0}, /
-              '1':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0}, /
-              '2':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0}}
+node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'stationary':1}, 
+        '1':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'stationary':1}, 
+        '2':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'stationary':1} }
 
 class UserInterfaceThread(Thread):
     def __init__(self, queue):
@@ -37,13 +37,10 @@ class UserInterfaceThread(Thread):
             else:
                 # Adding proper commands to the queue
                 self.queue.put(command)
-            # SEND MESSAGE TO NODE
-
         return
 
 class ClientThread(Thread):
     def __init__(self, client_sock, queue, curr_row, curr_col, node_id):
-        print("inited\n");
         Thread.__init__(self)
         self.client = client_sock
         self.queue = queue
@@ -59,36 +56,22 @@ class ClientThread(Thread):
             
             if not self.queue.empty():
                 command = self.queue.get()
+                node_state[self.node_id]['stationary'] = 0
                 self.client.sendall(command)
                 
             try:
                 data = self.client.recv(6)
                 if len(data) > 0:
-                    if self.node_id = '0':
-                        node_state['0']['curr_row'] = data[1]
-                        node_state['0']['curr_col'] = data[2]
-                        node_state['0']['curr_orient'] = data[3]
-                        node_state['0']['next_row'] = data[4]
-                        node_state['0']['next_col'] = data[5]
-                    elif self.node_id =='1'
-                        node_state['1']['curr_row'] = data[1]
-                        node_state['1']['curr_col'] = data[2]
-                        node_state['1']['curr_orient'] = data[3]
-                        node_state['1']['next_row'] = data[4]
-                        node_state['1']['next_col'] = data[5]
-                    elif self.node_id =='2'
-                        node_state['2']['curr_row'] = data[1]
-                        node_state['2']['curr_col'] = data[2]
-                        node_state['2']['curr_orient'] = data[3]
-                        node_state['2']['next_row'] = data[4]
-                        node_state['2']['next_col'] = data[5]
-                    print data
+                    node_state[self.node_id]['curr_row'] = data[1]
+                    node_state[self.node_id]['curr_col'] = data[2]
+                    node_state[self.node_id]['curr_orient'] = data[3]
+                    node_state[self.node_id]['next_row'] = data[4]
+                    node_state[self.node_id]['next_col'] = data[5]
             except socket.error as ex:
-                if str(ex) == "[Errno 35] Resource temporarily unavailable":
-                    time.sleep(0.01)
-                    continue
-                raise ex
-
+                print ex
+                time.sleep(0.01)
+                continue
+        print "Closing client socket..."
         self.client.close()
         return
 
@@ -166,18 +149,18 @@ class Server:
                         continue
                     raise ex
                 
-                if ((node_state['0']['next_row'] == node_state['1']['next_row']) and \
-                    (node_state['0']['next_col'] == node_state['1']['next_col'])):
-                    #collision for node 0 and 1
-
-                elif ((node_state['0']['next_row'] == node_state['2']['next_row']) and \
-                      (node_state['0']['next_col'] == node_state['2']['next_col'])):
-                    #collision for node 0 and 2
-
-                elif ((node_state['1']['next_row'] == node_state['2']['next_row']) and \
-                      (node_state['1']['next_col'] == node_state['2']['next_col'])):
-                    #collision for node 1 and 2
-
+                if ((node_state['0']['next_row'] == node_state['1']['next_row']) and (node_state['0']['next_col'] == node_state['1']['next_col'])):
+                    queue0.push('STOPR')
+                    queue1.push('STOP')
+                    continue
+                elif ((node_state['0']['next_row'] == node_state['2']['next_row']) and (node_state['0']['next_col'] == node_state['2']['next_col'])):
+                    queue0.push('STOPR')
+                    queue2.push('STOP')
+                    continue
+                elif ((node_state['1']['next_row'] == node_state['2']['next_row']) and (node_state['1']['next_col'] == node_state['2']['next_col'])):
+                    queue2.push('STOP')                    
+                    queue1.push('STOPR')
+                    continue
                 if data:
                     if data[0:3] == "CHK":
                         curr_row = data[4]

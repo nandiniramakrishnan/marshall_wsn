@@ -9,7 +9,10 @@ import os
 
 # Server address
 server_address = ('128.237.217.77', 10000)
+STOPMSG = "STOP"
+STOPREROUTEMSG = "STOPR"
 
+# This class sends messages to the Marshall while driving
 class MarshallCommsThread(Thread):
     def __init__(self, sock, queue, node_id):
         Thread.__init__(self)
@@ -18,23 +21,19 @@ class MarshallCommsThread(Thread):
         self.node_id = node_id
 
     def run(self):
-        
         while True:
             if not self.queue.empty():
-                print "drive queue is not empty!"
                 new_pos = self.queue.get()
                 curr_row = new_pos[0]
                 curr_col = new_pos[1]
                 new_buf = [ str(self.node_id), str(curr_row), str(curr_col) ]
                 new_msg = ''.join(new_buf)
-                print new_msg
                 self.sock.sendall(new_msg)
-            
         return
 
 
-# This is the target function of all DRIVING threads. Only DRIVING to happen here.
-# Communication with DRIVING thread will happen with argument "queue".
+# This is the DRIVING CLASS. Only DRIVING to happen here.
+# Communication with MARSHALL_COMMS_THREAD will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 class DriverThread(Thread):
     def __init__(self, curr_row, curr_col, curr_orient, dest_row, dest_col, queue):
@@ -77,56 +76,7 @@ class DriverThread(Thread):
 		print("Driving done in drivethread")
 		return
        
-	   '''
-	   #OLD run() code
-	   # Obtain directions to the destination and store in path
-        path = DF.path_plan(self.curr_row, self.curr_col, self.dest_row, self.dest_col)
-
-        #follow path to destination
-        #follows E/W and then N/S
-        while (self.curr_col != self.dest_col):
-            if (path['E'] > 0):
-                if (DF.line_follow(self.curr_orient, "E") == 0):
-                    path['E'] = path['E']-1	
-                    self.curr_col = self.curr_col + 1
-                    self.queue.put((self.curr_row, self.curr_col, self.curr_orient))
-                else:
-                    print("went off grid, mission failed")
-                    return
-                self.curr_orient = "E"
-            elif (path['W'] > 0):
-                if (DF.line_follow(self.curr_orient, "W") == 0):
-                    path['W'] = path['W'] - 1
-                    self.curr_col = self.curr_col - 1
-                    self.queue.put((self.curr_row, self.curr_col, self.curr_orient))
-                else:
-                    print("went off grid, mission failed")
-                    return
-                self.curr_orient = "W"
-        while (self.curr_row != self.dest_row):
-            if (path['N'] > 0):
-                if (DF.line_follow(self.curr_orient, "N") == 0):
-                    path['N'] = path['N']-1
-                    self.curr_row = self.curr_row - 1
-                    self.queue.put((self.curr_row, self.curr_col, self.curr_orient))
-                else:
-                    print("went off grid, mission failed")
-                    return
-                self.curr_orient = "N"
-            elif (path['S'] > 0):
-                if (DF.line_follow(self.curr_orient, "S") == 0):
-                    path['S'] = path['S']-1
-                    self.curr_row = self.curr_row + 1
-                    self.queue.put((self.curr_row, self.curr_col, self.curr_orient))
-                else:
-                    print("went off grid, mission failed")
-                    return
-                self.curr_orient = "S"
-        
-        print "drivings done in drivethread"
-	return
-	'''
-
+# This is the Node class
 class Node:
     def __init__(self, node_id, drivingState, curr_row, curr_col, curr_orient):
         self.sock = None
@@ -171,6 +121,13 @@ class Node:
                 dest_row = data[1]
                 dest_col = data[2]
                 command_queue.put((dest_row, dest_col))
+            
+            if data == STOPMSG:
+                print "Received ",
+                print data
+
+            if data == STOPREROUTEMSG:
+                print "Received %s" % data
 
             if self.drivingState == False and not command_queue.empty():
                 print "gonna start driving!"
@@ -193,19 +150,3 @@ if "__main__" == __name__:
     print "\nTerminated"
     os._exit(0)
 
-#functions for drivethread, move these ASAP to drive_fcns
-
-
-def update_row(curr_row, direction):
-	if direction == "N":
-		curr_row = curr_row - 1
-	else if direction == "S":
-		curr_row = curr_row + 1
-	return curr_row
-
-def update_col(curr_col, direction):
-	if direction == "W":
-		curr_col = curr_col - 1
-	else if direction == "E":
-		curr_col = curr_col + 1
-	return curr_col
