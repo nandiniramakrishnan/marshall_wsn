@@ -38,6 +38,20 @@ black_thresh = 0.00045
 #Loop period
 delay = 0.001 #0.05
 
+
+def update_row(curr_row, direction):
+	if direction == "N":
+		curr_row = curr_row - 1
+	elif direction == "S":
+		curr_row = curr_row + 1
+	return curr_row
+
+def update_col(curr_col, direction):
+	if direction == "W":
+		curr_col = curr_col - 1
+	elif direction == "E":
+		curr_col = curr_col + 1
+	return curr_col
 # Line following code goes here!
 # This function follows a line straight until an intersection is reached
 def line_follow(curr_orient, direction):
