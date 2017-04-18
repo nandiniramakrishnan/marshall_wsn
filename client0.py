@@ -41,9 +41,14 @@ class MarshallCommsThread(Thread):
                 new_pos = self.queue.get()
                 curr_row = new_pos[0]
                 curr_col = new_pos[1]
+                if curr_row == 'q' and curr_col == 'u':
+                    print "got quit"
+                    break
                 new_buf = [ str(self.node_id), str(curr_row), str(curr_col) ]
                 new_msg = ''.join(new_buf)
                 self.sock.sendall(new_msg)
+        print "closing sock in mct" 
+        self.sock.close()
         return
 
 
@@ -95,6 +100,7 @@ class Node:
         self.curr_row = curr_row
         self.curr_col = curr_col
         self.curr_orient = curr_orient
+        self.thread_list = []
 
     def run(self):
         # Create a TCP/IP Socket
@@ -109,8 +115,10 @@ class Node:
         command_queue = Queue.Queue()
         quit_queue = Queue.Queue()
         quit_thread = QuitThread(quit_queue)
+        self.thread_list.append(quit_thread)
         quit_thread.start()
         send_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id)  
+        self.thread_list.append(send_thread)
         send_thread.start()
         # Send CHK message to reveal yourself to the Marshall
         print 'Sending "%s"' % chk_msg
@@ -124,7 +132,7 @@ class Node:
                 if not quit_queue.empty():
                     break
 
-                if data.lower() == "ack":
+                if data != None and len(data) >= 3 and data[0:3] == "ACK":
                     received_ack = True
                     print 'Received "%s"' % data
             except socket.error as ex:
@@ -146,7 +154,9 @@ class Node:
             # Listen data
             try:
                 data = self.sock.recv(16)
-            
+                
+                if data != None and len(data) >= 4 and data[0:4] == "quit":
+                    break
                 # You received a command!
                 if data != None and len(data) == 3 and data[0] == str(self.node_id):
                     print 'Received "%s"' % data
@@ -175,8 +185,7 @@ class Node:
                     break
                 raise ex
             if not quit_queue.empty():
-                if drivingThread != None:
-                    drivingThread.join()
+                drive_comms_queue.put("qu")
                 break
 
             if self.drivingState == False and not command_queue.empty():
@@ -184,16 +193,27 @@ class Node:
                 (dest_row, dest_col) = command_queue.get()
                 drivingThread = DriverThread(self.curr_row, self.curr_col, self.curr_orient, dest_row, dest_col, drive_comms_queue)
                 self.drivingState = True
+                self.thread_list.append(drivingThread)
                 drivingThread.start()
-                drivingThread.join()        
+                drivingThread.join() 
+                self.thread_list.remove(drivingThread)
                 self.drivingState = False
 
-        print 'Closing socket'
+        for thread in self.thread_list:
+            thread.join()
+        print "Joining any driving threads..."
         quit_thread.join()
-        send_thread.join()
+        print "Joining quit thread.."
         self.sock.close()
+        print 'Closing socket'
         motors.setSpeeds(0, 0)
+        print "Shutting motors..."
         GPIO.cleanup()
+        print "GPIO cleanup... done."
+        send_thread.join()
+        print "Joining send thread.."
+        return
+
 
 if "__main__" == __name__:
     node = Node(0, False, 0, 0, 'E')
