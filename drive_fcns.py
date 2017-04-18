@@ -12,6 +12,8 @@ import wiringpi as wp2
 import RPi.GPIO as GPIO
 import signal
 import atexit
+import copy
+import operator
 
 
 # GPIO pins of sensors
@@ -325,6 +327,7 @@ def path_plan(curr_row, curr_col, new_row, new_col):
 	path['W'] = abs(diff_col)
     return path
 
+'''
 #new plan_path code
 def plan_path(curr_row, curr_col, new_row, new_col):
     path = []
@@ -339,3 +342,68 @@ def plan_path(curr_row, curr_col, new_row, new_col):
     elif (diff_row < 0): #drive north
 	    path.append(('N', abs(diff_row)))
     return path
+'''
+
+
+gridSize = [4,6]
+
+#avoidList = [(1,1), (2,3), (3,3)]
+
+def findCoords(curr_row, curr_col, dest_row, dest_col, avoidList):
+    path_found = 0
+    paths = [[(curr_row, curr_col)]]
+    paths_to_remove = []
+    
+    while path_found == 0:
+        paths_queue = copy.deepcopy(paths)
+        for path in paths_queue:
+            if (dest_row, dest_col) in path:
+                path_found = 1
+                return path
+            
+            elif (dest_row, dest_col) not in path:
+                tmp_path = path
+
+                row = tmp_path[len(tmp_path)-1][0]
+                col = tmp_path[len(tmp_path)-1][1]
+
+                adjacents = []
+                if col < (gridSize[1]-1): #east
+                    adjacents.append((row, col+1))
+                if col >= 1: #west
+                    adjacents.append((row, col-1))
+                if row >= 1: #north
+                    adjacents.append((row-1, col))
+                if row < (gridSize[0]-1): #south
+                    adjacents.append((row+1, col))
+
+                for i in range(len(adjacents)):
+                    if (adjacents[i] not in avoidList) and (adjacents[i] not in tmp_path):
+                        tmp_path.append(adjacents[i])
+                        tmp_copy = copy.deepcopy(tmp_path)
+                        paths.append(tmp_copy)
+                        tmp_path.remove(adjacents[i])
+
+def coordsToPath(coords):
+    path = []
+    for i in range(1, len(coords)):
+        dir = getDir(coords[i-1], coords[i])
+        path.append(dir)
+    return path
+
+def getDir(curLoc, nextLoc):
+    move = tuple(map(operator.sub, nextLoc, curLoc))
+    if move[0] == 1:
+        dir = "S"
+    elif move[0] == -1:
+        dir = "N"
+    elif move[1] == 1:
+        dir = "E"
+    elif move[1] == -1:
+        dir = "W"
+    return dir
+
+def plan_path(curr_row, curr_col, dest_row, dest_col, avoidList):
+    path_coords = findCoords(curr_row, curr_col, dest_row, dest_col, avoidList)
+    path_dirs = coordsToPath(path_coords)
+    return (path_coords, path_dirs)
