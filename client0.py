@@ -109,10 +109,10 @@ class DriverThread(Thread):
             next_orient = path_dirs[0] #will be "N" "S" "E" or "W"
             if (DF.line_follow(self.curr_orient, next_orient) == 0):
                 #update curr and next locs
-                self.curr_row = path_coords[0][0]
-                self.curr_col = path_coords[0][1]
-                self.next_row = path_coords[1][0]
-                self.next_col = path_coords[1][1]
+                self.curr_row = path_coords[1][0]
+                self.curr_col = path_coords[1][1]
+                self.next_row = path_coords[2][0]
+                self.next_col = path_coords[2][1]
                 self.curr_orient = path_dirs[0]
                 #update path coords and dirs
                 path_coords = path_coords[1:]
