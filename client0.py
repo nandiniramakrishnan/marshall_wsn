@@ -8,9 +8,24 @@ import RPi.GPIO as GPIO
 import os
 
 # Server address
-server_address = ('128.237.217.77', 10000)
+server_address = ('128.237.191.35', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STOPR"
+
+class QuitThread(Thread):
+    def __init__(self, queue):
+        Thread.__init__(self)
+        self.queue = queue
+
+    def run(self):
+        while True:
+            command = raw_input("")
+            if command == 'q':
+                print "put quit in queu"
+                self.queue.put(command)
+                break
+        return
+
 
 # This class sends messages to the Marshall while driving
 class MarshallCommsThread(Thread):
@@ -52,29 +67,24 @@ class DriverThread(Thread):
         #follow path to destination
         #by following the elements in path from left to right
 		#while the destination has not been reached
-        while ((self.cur_col != self.dest_col) or (self.cur_row != self.dest_row)) and (len(path) > 0):
+        while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path) > 0):
 			direction = path[0][0] #will be "N" "S" "E" or "W"
 			length = int(path[0][1]) #some number of roads to drive in direction
-
 			while (length > 0):
 				if (DF.line_follow(self.curr_orient, direction) == 0):
 					#move was successful, update position and direction
 					length = length - 1
-					self.curr_row = update_row(curr_row, direction)
-					self.curr_col = update_col(curr_col, direction)
-				    self.curr_orient = direction
-					#send current position to marshall
+					self.curr_row = DF.update_row(self.curr_row, direction)
+					self.curr_col = DF.update_col(self.curr_col, direction)
+					self.curr_orient = direction
 					self.queue.put((self.curr_row, self.curr_col, self.curr_orient))
-				
 				else:
 					#move was unsuccessful
-					print("went off grid, mission failed")
-				    return
-			
+					print "went off grid, mission failed"
+					return
 			#update path once movement in direction is complete by removing first element
 			path = path[1:]
-		print("Driving done in drivethread")
-		return
+        #return
        
 # This is the Node class
 class Node:
@@ -97,6 +107,9 @@ class Node:
         received_ack = False
         drive_comms_queue = Queue.Queue()
         command_queue = Queue.Queue()
+        quit_queue = Queue.Queue()
+        quit_thread = QuitThread(quit_queue)
+        quit_thread.start()
         send_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id)  
         send_thread.start()
         # Send CHK message to reveal yourself to the Marshall
@@ -107,6 +120,9 @@ class Node:
         # Look for the ACK from marshall
         while not received_ack:
             data = self.sock.recv(4)
+            if not quit_queue.empty():
+                break
+
             if data.lower() == "ack":
                 received_ack = True
                 print 'Received "%s"' % data
@@ -129,6 +145,11 @@ class Node:
             if data == STOPREROUTEMSG:
                 print "Received %s" % data
 
+            if not quit_queue.empty():
+                if drivingThread != None:
+                    drivingThread.join()
+                break
+
             if self.drivingState == False and not command_queue.empty():
                 print "gonna start driving!"
                 (dest_row, dest_col) = command_queue.get()
@@ -139,6 +160,7 @@ class Node:
                 self.drivingState = False
 
         print 'Closing socket'
+        quit_thread.join()
         send_thread.join()
         self.sock.close()
         motors.setSpeeds(0, 0)

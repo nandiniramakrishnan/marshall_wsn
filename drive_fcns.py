@@ -42,14 +42,14 @@ delay = 0.001 #0.05
 def update_row(curr_row, direction):
 	if direction == "N":
 		curr_row = curr_row - 1
-	else if direction == "S":
+	elif direction == "S":
 		curr_row = curr_row + 1
 	return curr_row
 
 def update_col(curr_col, direction):
 	if direction == "W":
 		curr_col = curr_col - 1
-	else if direction == "E":
+	elif direction == "E":
 		curr_col = curr_col + 1
 	return curr_col
 # Line following code goes here!

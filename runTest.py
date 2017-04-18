@@ -22,7 +22,7 @@ max_col = 3
 # Communication with DRIVING thread will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 class DriverThread(Thread):
-    def __init__(self, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, queue):
+    def __init__(self, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list):
         Thread.__init__(self)
         self.curr_row = curr_row
         self.curr_col = curr_col
@@ -31,14 +31,16 @@ class DriverThread(Thread):
         self.next_col = next_col
         self.dest_row = int(dest_row)
         self.dest_col = int(dest_col)
+        self.avoid_list = avoid_list
        # self.queue = queue
 
     def detour(self, path, direction, length): 
+        print("in detour")
         if (length == 1):
             #detour E
             if (direction == 'E'):
                 if (self.curr_row == 0): #top boundary, can't go north
-                    if ((self.next_row + 1, self.next_col) in avoid_list): #south location blocked too
+                    if ((self.next_row + 1, self.next_col) in self.avoid_list): #south location blocked too
                         if(self.curr_col == 0): #left boundary
                             #keep original next loc
                             #send message that blocked in both directions??
@@ -51,7 +53,7 @@ class DriverThread(Thread):
                         path = [('S', 1)] + path + [('N', 1)]
                         self.next_row = self.next_row + 1
                 elif (self.curr_row == max_row): #bottom boundary, can't go south
-                    if ((self.next_row - 1, self.next_col) in avoid_list): #north location blocked too
+                    if ((self.next_row - 1, self.next_col) in self.avoid_list): #north location blocked too
                         if(self.curr_col == 0): #left boundary
                             #keep original next loc
                             #send message that blocked in both directions??
@@ -64,7 +66,7 @@ class DriverThread(Thread):
                         path = [('N', 1)] + path + [('S', 1)]
                         self.next_row = self.next_row - 1
                 else: #go north by default unless blocked too
-                    if ((self.next_row - 1, self.next_col) in avoid_list): #north location blocked
+                    if ((self.next_row - 1, self.next_col) in self.avoid_list): #north location blocked
                         path = [('S', 1)] + path + [('N', 1)] #go south
                         self.next_row = self.next_row + 1
                     else: #go north
@@ -73,7 +75,7 @@ class DriverThread(Thread):
             #detour W
             elif (direction == 'W'):
                 if (self.curr_row == 0): #top boundary, can't go north
-                    if ((self.next_row + 1, self.next_col) in avoid_list): #south location blocked too
+                    if ((self.next_row + 1, self.next_col) in self.avoid_list): #south location blocked too
                         if(self.curr_col == max_col): #left boundary
                             #keep original next loc
                             #send message that blocked in both directions??
@@ -87,7 +89,7 @@ class DriverThread(Thread):
                         path = [('S', 1)] + path + [('N', 1)]
                         self.next_row = self.next_row + 1
                 elif (self.curr_row == max_row): #bottom boundary, can't go south
-                    if ((self.next_row - 1, self.next_col) in avoid_list): #north location blocked too
+                    if ((self.next_row - 1, self.next_col) in self.avoid_list): #north location blocked too
                         if(self.curr_col == max_col): #left boundary
                             #keep original next loc
                             #send message that blocked in both directions??
@@ -100,7 +102,7 @@ class DriverThread(Thread):
                         path = [('N', 1)] + path + [('S', 1)]
                         self.next_row = self.next_row - 1
                 else: #go north by default unless blocked too
-                    if ((self.next_row - 1, self.next_col) in avoid_list): #north location blocked
+                    if ((self.next_row - 1, self.next_col) in self.avoid_list): #north location blocked
                         path = [('S', 1)] + path + [('N', 1)] #go south
                         self.next_row = self.next_row + 1
                     else: #go north
@@ -109,7 +111,7 @@ class DriverThread(Thread):
             #detour N
             elif (direction == 'N'):
                 if (self.curr_col == 0): #left boundary, can't go west
-                    if ((self.next_row, self.next_col + 1) in avoid_list): #east location blocked too
+                    if ((self.next_row, self.next_col + 1) in self.avoid_list): #east location blocked too
                         if (self.curr_row == max_row): #bottom boundary
                             #keep original next loc
                             #send message that blocked in both directions??
@@ -122,7 +124,7 @@ class DriverThread(Thread):
                         path = [('E', 1)] + path + [('W', 1)]
                         self.next_col = self.next_col + 1
                 elif (self.curr_col == max_col): #right boundary, can't go east
-                    if ((self.next_row, self.next_col - 1) in avoid_list): #west location blocked too
+                    if ((self.next_row, self.next_col - 1) in self.avoid_list): #west location blocked too
                         if (self.curr_row == max_row): #bottom boundary
                             #keep original next loc
                             #send message that blocked in both directions??
@@ -135,7 +137,7 @@ class DriverThread(Thread):
                         path = [('W', 1)] + path + [('E', 1)]
                         self.next_col = self.next_col - 1
                 else: #go west by default unless blocked too
-                    if ((self.next_row, self.next_col - 1) in avoid_list): #west location blocked
+                    if ((self.next_row, self.next_col - 1) in self.avoid_list): #west location blocked
                         path = [('E', 1)] + path + [('W', 1)] #go east
                         self.next_col = self.next_col + 1
                     else: #go west
@@ -144,7 +146,7 @@ class DriverThread(Thread):
             #detour S
             elif (direction == 'S'):
                 if (self.curr_col == 0): #left boundary, can't go west
-                    if ((self.next_row, self.next_col + 1) in avoid_list): #east location blocked too
+                    if ((self.next_row, self.next_col + 1) in self.avoid_list): #east location blocked too
                         if (self.curr_row == 0): #top boundary
                             #keep original next loc
                             #send message that blocked in both directions??
@@ -157,7 +159,7 @@ class DriverThread(Thread):
                         path = [('E', 1)] + path + [('W', 1)]
                         self.next_col = self.next_col + 1
                 elif (self.curr_col == max_col): #right boundary, can't go east
-                    if ((self.next_row, self.next_col - 1) in avoid_list): #west location blocked too
+                    if ((self.next_row, self.next_col - 1) in self.avoid_list): #west location blocked too
                         if (self.curr_row == 0): #top boundary
                             #keep original next loc
                             #send message that blocked in both directions??
@@ -170,7 +172,7 @@ class DriverThread(Thread):
                         path = [('W', 1)] + path + [('E', 1)]
                         self.next_col = self.next_col - 1
                 else: #go west by default unless blocked too
-                    if ((self.next_row, self.next_col - 1) in avoid_list): #west location blocked
+                    if ((self.next_row, self.next_col - 1) in self.avoid_list): #west location blocked
                         path = [('E', 1)] + path + [('W', 1)] #go east
                         self.next_col = self.next_col + 1
                     else: #go west
@@ -180,7 +182,7 @@ class DriverThread(Thread):
         elif (length == 2):
             if (direction == 'E'):
                 if (self.curr_row == 0): #top boundary, try south first
-                    if ((self.next_row + 1, self.next_col) in avoid_list): #check if south blocked
+                    if ((self.next_row + 1, self.next_col) in self.avoid_list): #check if south blocked
                         if (self.curr_col == 0): #left boundary
                             #stuck
                             print("I'm stuck")
@@ -194,7 +196,7 @@ class DriverThread(Thread):
                         path = [path[1], path[0]]
                         self.next_row = self.next_row + 1
                 elif (self.curr_row == max_row): #bottom boundary, try north first
-                    if ((self.next_row - 1, self.next_col) in avoid_list): #check if north blocked
+                    if ((self.next_row - 1, self.next_col) in self.avoid_list): #check if north blocked
                         if (self.curr_col == 0): #left boundary
                             #stuck
                             print("I'm stuck")
@@ -209,7 +211,7 @@ class DriverThread(Thread):
                         self.next_row = self.next_row - 1
                 else: #default N/S
                     if (path[1][0] == 'N'):
-                        if ((self.next_row - 1, self.next_col) in avoid_list): #check if north blocked
+                        if ((self.next_row - 1, self.next_col) in self.avoid_list): #check if north blocked
                             #if ((self.next_row + 1, self.next_col) in avoid_list): #try south, add for cmd detours
                             if (path[0][1] > path[1][1]):# E > N, go south
                                 if (path[0][1] == 1):
@@ -227,7 +229,7 @@ class DriverThread(Thread):
                             path = [path[1], path[0]]
                             self.next_row = self.next_row - 1
                     elif (path[1][0] == 'S'):
-                        if ((self.next_row + 1, self.next_col) in avoid_list): #check if south blocked
+                        if ((self.next_row + 1, self.next_col) in self.avoid_list): #check if south blocked
                             #if ((self.next_row - 1, self.next_col) in avoid_list): #try north, add for cmd detours
                             if (path[0][1] > path[1][1]):# E > S, go north
                                 if (path[0][1] == 1):
@@ -246,7 +248,7 @@ class DriverThread(Thread):
                             self.next_row = self.next_row + 1
             elif (direction == 'W'):
                 if (self.curr_row == 0): #top boundary, try south first
-                    if ((self.next_row + 1, self.next_col) in avoid_list): #check if south blocked
+                    if ((self.next_row + 1, self.next_col) in self.avoid_list): #check if south blocked
                         if (self.curr_col == max_col): #right boundary
                             #stuck
                             print("I'm stuck")
@@ -260,7 +262,7 @@ class DriverThread(Thread):
                         path = [path[1], path[0]]
                         self.next_row = self.next_row + 1
                 elif (self.curr_row == max_row): #bottom boundary, try north first
-                    if ((self.next_row - 1, self.next_col) in avoid_list): #check if north blocked
+                    if ((self.next_row - 1, self.next_col) in self.avoid_list): #check if north blocked
                         if (self.curr_col == max_col): #left boundary
                             #stuck
                             print("I'm stuck")
@@ -275,7 +277,7 @@ class DriverThread(Thread):
                         self.next_row = self.next_row - 1
                 else: #default N/S
                     if (path[1][0] == 'N'):
-                        if ((self.next_row - 1, self.next_col) in avoid_list): #check if north blocked
+                        if ((self.next_row - 1, self.next_col) in self.avoid_list): #check if north blocked
                             #if ((self.next_row + 1, self.next_col) in avoid_list): #try south, add for cmd detours
                             if (path[0][1] > path[1][1]):# W > N, go south
                                 if (path[0][1] == 1):
@@ -293,7 +295,7 @@ class DriverThread(Thread):
                             path = [path[1], path[0]]
                             self.next_row = self.next_row - 1
                     elif (path[1][0] == 'S'):
-                        if ((self.next_row + 1, self.next_col) in avoid_list): #check if south blocked
+                        if ((self.next_row + 1, self.next_col) in self.avoid_list): #check if south blocked
                             #if ((self.next_row - 1, self.next_col) in avoid_list): #try north, add for cmd detours
                             if (path[0][1] > path[1][1]):# W > S, go north
                                 if (path[0][1] == 1):
@@ -312,10 +314,9 @@ class DriverThread(Thread):
                             self.next_row = self.next_row + 1 
         return path
 
-    def runTrial(self):
+    def run(self):
         # Obtain directions to the destination and store in path
         path = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col)
-
         #msg = self.queue.get()
         '''
         #new avoid_list message
@@ -342,9 +343,10 @@ class DriverThread(Thread):
                     self.next_row = self.next_row - 1
                 elif (path[0][0] == 'S'):
                     self.next_row = self.next_row + 1
+            print(self.avoid_list)
             #self.queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
-
-            if ((self.next_row, self.next_col) in avoid_list):
+            if ((self.next_row, self.next_col) in self.avoid_list):
+                print("initial next loc in avoid list")
                 if (self.next_row, self.next_col) != (self.dest_row, self.dest_col): #next location is not destination    
                     #undo next_row and next_col changes
                     if (path[0][0] == 'E'):
@@ -358,21 +360,29 @@ class DriverThread(Thread):
                     #change path
                     if (len(path) == 1): #moving in only one direction to destination
                         #detour E
+                        print "\t\t\t\t IN LEN 1"
                         if (path[0][0] == 'E'): #E loc blocked
-                            path = self.detour('E', 1)
+                            print "\t\t\t\t In e"
+                            path = self.detour(path, 'E', 1)
                         elif (path[0][0] == 'W'): #W loc blocked, go N/S first instead
-                            path = self.detour('W', 1)
+                            print "\t\t\t\t In w"
+                            path = self.detour(path, 'W', 1)
                         elif (path[0][0] == 'N'): #N blocked, go E/W first instead
-                            path =self.detour('N', 1)
+                            print "\t\t\t\t In n"
+                            path =self.detour(path, 'N', 1)
                         elif (path[0][0] == 'S'): #N/S blocked, go E/W first instead
-                            path =self.detour('S', 1)
+                            print "\t\t\t\t In s"
+                            path =self.detour(path, 'S', 1)
                     elif (len(path) == 2):
+                        print "\t\t\t\t IN LEN 2"
                         #E direction blocked
                         if (path[0][0] == 'E'):
-                            path =self.detour('E', 2) 
+                            print "\t\t\t\t In e"
+                            path =self.detour(path, 'E', 2) 
                         #W direction blocked
                         if (path[0][0] == 'W'):
-                            path =self.detour('W', 2) 
+                            print "\t\t\t\t In w"
+                            path =self.detour(path, 'W', 2) 
             #send initial next row and col to marshall
         #    self.queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
 
@@ -383,6 +393,8 @@ class DriverThread(Thread):
             print(self.curr_col)
             print(self.next_row)
             print(self.next_col)
+            print(self.dest_row)
+            print(self.dest_col)
             print('\n')
 
             '''
@@ -475,14 +487,19 @@ class Node:
         self.next_col = next_col
 
     def run(self):
-        for self.curr_row in range(3):
-            self.next_row = self.curr_row
-            for self.curr_col in range(4):
-                self.next_col = self.curr_col
-                for self.dest_row in range(3):
-                    for self.dest_col in range(4):
-                        avoid_list = [(0,1)]
-                        DriverThread(self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col)
+        avoid_list = [(0,1), (1,0)]
+        #newThread = DriverThread(0, 0, 'E', 0, 0, 0, 2, avoid_list)
+        for curr_row in range(3):
+            next_row = curr_row
+            for curr_col in range(4):
+                next_col = curr_col
+                for dest_row in range(3):
+                    for dest_col in range(4):
+                        print("running path")
+                        newThread = DriverThread(curr_row, curr_col, self.curr_orient, next_row, next_col, dest_row, dest_col, avoid_list)
+        
+                        newThread.start()
+                        newThread.join()
         '''
    
    		# Create a TCP/IP Socket
