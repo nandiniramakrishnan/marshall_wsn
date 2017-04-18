@@ -1,4 +1,5 @@
 import copy
+import operator
 
 gridSize = [5,6]
 
@@ -11,14 +12,14 @@ dest_row = 3
 dest_col = 4
 
 
-def findPath(curr_row, curr_col, dest_row, dest_col, avoidList):
+def findCoords(curr_row, curr_col, dest_row, dest_col, avoidList):
     path_found = 0
     paths = [[(curr_row, curr_col)]]
     paths_to_remove = []
     
     while path_found == 0:
-        paths_traverse = copy.deepcopy(paths)
-        for path in paths_traverse:
+        paths_queue = copy.deepcopy(paths)
+        for path in paths_queue:
             if (dest_row, dest_col) in path:
                 path_found = 1
                 return path
@@ -46,6 +47,46 @@ def findPath(curr_row, curr_col, dest_row, dest_col, avoidList):
                         paths.append(tmp_copy)
                         tmp_path.remove(adjacents[i])
 
-#find_route(curr_row, curr_col, dest_row, dest_col, avoidList, [], direction)
-paths = findPath(curr_row, curr_col, dest_row, dest_col, avoidList)
+
+def coordsToPath(coords):
+    path = []
+    for i in range(len(coords)):
+        if i == 0:
+            #adding first item to path
+            dir = getDir(coords[0], coords[1])
+            path.append((dir, 1))
+        else:
+            #path already has at least one element
+            dir = getDir(coords[i-1], coords[i])
+            if dir == path[len(path)-1][0]:
+                path[len(path)-1]  = (dir, path[len(path)-1][1] + 1)
+            else:
+                path.append((dir, 1))
+    
+    # Change numbers to strings
+    newPath = []
+    for move in path:
+        newPath.append((move[0], str(move[1])))
+
+    return newPath
+
+
+
+def getDir(curLoc, nextLoc):
+    move = tuple(map(operator.sub, nextLoc, curLoc))
+    if move[0] == 1:
+        dir = "S"
+    elif move[0] == -1:
+        dir = "N"
+    elif move[1] == 1:
+        dir = "E"
+    elif move[1] == -1:
+        dir = "W"
+    return dir
+
+
+paths = findCoords(curr_row, curr_col, dest_row, dest_col, avoidList)
 print(paths)
+
+path = coordsToPath(paths)
+print(path)
