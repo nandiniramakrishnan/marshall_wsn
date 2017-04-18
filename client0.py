@@ -17,7 +17,7 @@ next_col = 0
 avoid_list = []
 
 # Server address
-server_address = ('128.237.191.35', 10000)
+server_address = ('128.237.193.177', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STOPR"
 
@@ -187,32 +187,61 @@ class Node:
 
         # Look for the ACK from marshall
         while not received_ack:
-            data = self.sock.recv(4)
-            if not quit_queue.empty():
-                break
+            try:
+                data = self.sock.recv(16)
+                if not quit_queue.empty():
+                    break
 
-            if data.lower() == "ack":
-                received_ack = True
-                print 'Received "%s"' % data
-    
+                if data.lower() == "ack":
+                    received_ack = True
+                    print 'Received "%s"' % data
+            except socket.error as ex:
+                if str(ex) == "[Errno 35] Resource temporarily unavailable":
+                    time.sleep(0.01)
+                    continue
+                elif str(ex) == "[Errno 54] Connection reset by peer":
+                    print "Connection reset. Maybe the original client ended. Try again?"
+                    continue
+                elif str(ex) == "[Errno 9] Bad file descriptor":
+                    print "Client's dead.. ending this thread."
+                    break
+                elif str(ex) == "[Errno 32] Broken pipe":
+                    print "broken pipe"
+                    break
+                raise ex
+        
         while True:
             # Listen data
-            data = self.sock.recv(16)
+            try:
+                data = self.sock.recv(16)
             
-            # You received a command!
-            if data != None and len(data) == 3 and data[0] == str(self.node_id):
-                print 'Received "%s"' % data
-                dest_row = data[1]
-                dest_col = data[2]
-                command_queue.put((dest_row, dest_col))
+                # You received a command!
+                if data != None and len(data) == 3 and data[0] == str(self.node_id):
+                    print 'Received "%s"' % data
+                    dest_row = data[1]
+                    dest_col = data[2]
+                    command_queue.put((dest_row, dest_col))
             
-            if data == STOPMSG:
-                print "Received ",
-                print data
+                if data == STOPMSG:
+                    print "Received ",
+                    print data
 
-            if data == STOPREROUTEMSG:
-                print "Received %s" % data
-
+                if data == STOPREROUTEMSG:
+                    print "Received %s" % data
+            except socket.error as ex:
+                if str(ex) == "[Errno 35] Resource temporarily unavailable":
+                    time.sleep(0.01)
+                    continue
+                elif str(ex) == "[Errno 54] Connection reset by peer":
+                    print "Connection reset. Maybe the original client ended. Try again?"
+                    continue
+                elif str(ex) == "[Errno 9] Bad file descriptor":
+                    print "Client's dead.. ending this thread."
+                    break
+                elif str(ex) == "[Errno 32] Broken pipe":
+                    print "broken pipe"
+                    break
+                raise ex
             if not quit_queue.empty():
                 if drivingThread != None:
                     drivingThread.join()
