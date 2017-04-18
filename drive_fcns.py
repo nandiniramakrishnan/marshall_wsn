@@ -69,10 +69,11 @@ def line_follow(curr_orient, direction):
     motors.setSpeeds(v2, v2)
     time.sleep(0.5)
 
-
+    print("in line follow")
 
     while color != [2,2,2,2,2,2]: # Main loop
         # Repeat this loop every delay seconds
+        print("in line f while")
         time.sleep (delay)
         color = get_color()
 	if color == [2,2,2,2,2,2]:

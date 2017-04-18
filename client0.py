@@ -8,14 +8,7 @@ import RPi.GPIO as GPIO
 import os
 
 #initialize node 0 values
-node_id = 0
-curr_row = 0
-curr_col = 0
-curr_orient = 'E'
-next_row = 0
-next_col = 0
-avoid_list = []
-
+orient = 'E'
 # Server address
 server_address = ('128.237.193.177', 10000)
 STOPMSG = "STOP"
@@ -50,11 +43,15 @@ class MarshallCommsThread(Thread):
                 new_pos = self.queue.get()
                 curr_row = new_pos[0]
                 curr_col = new_pos[1]
+                curr_orient = new_pos[2]
+                next_row = new_pos[3]
+                next_col = new_pos[4]
                 if curr_row == 'q' and curr_col == 'u':
                     print "got quit"
                     break
-                new_buf = [ str(self.node_id), str(curr_row), str(curr_col) ]
+                new_buf = [ str(self.node_id), str(curr_row), str(curr_col), str(curr_orient), str(next_row), str(next_col) ]
                 new_msg = ''.join(new_buf)
+                print new_msg
                 self.sock.sendall(new_msg)
         print "closing sock in mct" 
         self.sock.close()
@@ -82,18 +79,26 @@ class DriverThread(Thread):
         rerouting = False
         # Obtain directions to the destination and store in path
         (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-        
+        print "path coords = ",
+        print path_coords
+        print "path dirs = ",
+        print path_dirs
         self.next_row = path_coords[1][0]
         self.next_col = path_coords[1][1]
         self.queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
 
         while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path_coords) > 1):
+            print "in while loop"
+            
             if rerouting == True:
                 self.avoid_list.remove(reroute_coord)
                 rerouting = False
 
-            msg = self.queue.get()
+            if not self.queue.empty():
+                msg = self.queue.get()
             #new avoid_list message
+            '''
+            print msg
             if (msg[0] == 'A' and msg[1] != str(node_id)): 
                 self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
                 (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
@@ -109,15 +114,20 @@ class DriverThread(Thread):
                 reroute_coord = path_coords[1]; #potential collision at next (row, col)
                 self.avoid_list.append(reroute_coord)
                 (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-
+            '''
             
             next_orient = path_dirs[0] #will be "N" "S" "E" or "W"
             if (DF.line_follow(self.curr_orient, next_orient) == 0):
+                print "dont line follow"
                 #update curr and next locs
+                if len(path_coords) == 2:
+                    self.next_row = path_coords[1][0]
+                    self.next_col = path_coords[1][1]
+                else:
+                    self.next_row = path_coords[2][0]
+                    self.next_col = path_coords[2][1]
                 self.curr_row = path_coords[1][0]
                 self.curr_col = path_coords[1][1]
-                self.next_row = path_coords[2][0]
-                self.next_col = path_coords[2][1]
                 self.curr_orient = path_dirs[0]
                 #update path coords and dirs
                 path_coords = path_coords[1:]
@@ -132,6 +142,7 @@ class DriverThread(Thread):
         self.curr_col = path_coords[0][1]
         self.next_row = path_coords[0][0]
         self.next_col = path_coords[0][1]
+        orient = self.curr_orient
         return
         '''
         #follow path to destination
@@ -266,6 +277,9 @@ class Node:
                 drivingThread.join() 
                 self.thread_list.remove(drivingThread)
                 self.drivingState = False
+                self.curr_row = int(dest_row)
+                self.curr_col = int(dest_col)
+                self.curr_orient = orient
 
         for thread in self.thread_list:
             thread.join()
@@ -284,6 +298,13 @@ class Node:
 
 
 if "__main__" == __name__:
+    node_id = 0
+    curr_row = 0
+    curr_col = 0
+    curr_orient = 'E'
+    next_row = 0
+    next_col = 0
+    avoid_list = []
     node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list)
     node.run()
     print "\nTerminated"
