@@ -98,14 +98,18 @@ class DriverThread(Thread):
             if not self.drive_comms_queue.empty():
                 msg = self.drive_comms_queue.get()
             #new avoid_list message
-            '''
+            
             print msg
             if (msg[0] == 'A' and msg[1] != str(node_id)): 
                 self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
                 (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
             elif (msg[0] == 'R' and msg[1] != str(node_id)):
-                self.avoid_list.remove((int(msg[2]), int(msg[3]))) #remove row,col pair from list
-                (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
+                if (self.avoid_list == []):
+                    #do nothing
+                    self.avoid_list = self.avoid_list
+                else:
+                    self.avoid_list.remove((int(msg[2]), int(msg[3]))) #remove row,col pair from list
+                    (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
             elif (msg == 'STOP'):
                 time.sleep(3)
             elif (msg == 'STOPR'):
@@ -115,7 +119,7 @@ class DriverThread(Thread):
                 reroute_coord = path_coords[1]; #potential collision at next (row, col)
                 self.avoid_list.append(reroute_coord)
                 (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-            '''
+            
             
             next_orient = path_dirs[0] #will be "N" "S" "E" or "W"
             if (DF.line_follow(self.curr_orient, next_orient) == 0):
@@ -145,28 +149,6 @@ class DriverThread(Thread):
         self.next_col = path_coords[0][1]
         self.update_node_queue.put((self.curr_row, self.curr_col, self.curr_orient))
         return
-        '''
-        #follow path to destination
-        #while the destination has not been reached
-        while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path) > 0):
-			direction = path[0][0] #will be "N" "S" "E" or "W"
-			length = int(path[0][1]) #some number of roads to drive in direction
-			while (length > 0):
-				if (DF.line_follow(self.curr_orient, direction) == 0):
-					#move was successful, update position and direction
-					length = length - 1
-					self.curr_row = DF.update_row(self.curr_row, direction)
-					self.curr_col = DF.update_col(self.curr_col, direction)
-					self.curr_orient = direction
-					self.queue.put((self.curr_row, self.curr_col, self.curr_orient))
-				else:
-					#move was unsuccessful
-					print "went off grid, mission failed"
-					return
-			#update path once movement in direction is complete by removing first element
-			path = path[1:]
-        #return
-        '''
        
 # This is the Node class
 class Node:
