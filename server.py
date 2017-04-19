@@ -6,9 +6,9 @@ import time
 import Queue
 
 server_address = ('', 10000)
-node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'stationary':1}, 
-        '1':{'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0, 'stationary':1}, 
-        '2':{'curr_row': 2, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 2, 'next_col': 0, 'stationary':1} }
+node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0}, 
+        '1':{'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0}, 
+        '2':{'curr_row': 2, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 2, 'next_col': 0} }
 
 class UserInterfaceThread(Thread):
     def __init__(self, queue):
@@ -56,7 +56,6 @@ class ClientThread(Thread):
             
             if not self.queue.empty():
                 command = self.queue.get()
-                node_state[self.node_id]['stationary'] = 0
                 self.client.sendall(command)
                 
             try:
@@ -67,6 +66,7 @@ class ClientThread(Thread):
                     node_state[self.node_id]['curr_orient'] = data[3]
                     node_state[self.node_id]['next_row'] = data[4]
                     node_state[self.node_id]['next_col'] = data[5]
+                    print data
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
                     time.sleep(0.01)
@@ -74,9 +74,9 @@ class ClientThread(Thread):
                 elif str(ex) == "[Errno 54] Connection reset by peer":
                     print "Connection reset. Maybe the original client ended. Try again?"
                     continue
-                elif str(ex) == "[Errno 9] Bad file descriptor":
-                    print "Client's dead.. ending this thread."
-                    break
+                #elif str(ex) == "[Errno 9] Bad file descriptor":
+                #    print "Client's dead.. ending this thread."
+                #    break
                 elif str(ex) == "[Errno 32] Broken pipe":
                     print "broken pipe"
                     break
@@ -136,6 +136,7 @@ class Server:
                     command = queue.get()
                     if command.lower() == 'quit':
                         for client in self.client_list:
+                            client.sendall('quit')
                             client.close()
                         for thread in self.thread_list:
                             thread.join(1.0)
@@ -143,10 +144,22 @@ class Server:
                         break
                     if command[0] == '0':
                         queue0.put(command)
+                        new_buf = [ 'R', str(node_state['0']['curr_row']), str(node_state['0']['curr_col']) ]
+                        new_msg = ''.join(new_buf) 
+                        queue1.put(new_msg)
+                        queue2.put(new_msg)
                     elif command[0] == '1':
                         queue1.put(command)
+                        new_buf = [ 'R', str(node_state['1']['curr_row']), str(node_state['1']['curr_col']) ]
+                        new_msg = ''.join(new_buf) 
+                        queue0.put(new_msg)
+                        queue2.put(new_msg)
                     elif command[0] == '2':
                         queue2.put(command)
+                        new_buf = [ 'R', str(node_state['2']['curr_row']), str(node_state['2']['curr_col']) ]
+                        new_msg = ''.join(new_buf) 
+                        queue0.put(new_msg)
+                        queue1.put(new_msg)
                 try:
                     self.sock.settimeout(0.5)
                     client = self.sock.accept()[0]
@@ -155,11 +168,8 @@ class Server:
                     time.sleep(1)
                     continue
                 try:
-                    data = client.recv(6)
-                    print data
-                    if data != None and len(data) > 0:
-                        print data
-                    if data != None and data[0:3] == "CHK":
+                    data = client.recv(16)
+                    if data != None and len(data) == 6 and data[0:3] == "CHK":
                         curr_row = data[4]
                         curr_col = data[5]
                         if data[3] == '0':
@@ -173,7 +183,6 @@ class Server:
                         self.thread_list.append(new_thread)
                         new_thread.start()
                         client.sendall("ACK")
-                        print len(self.thread_list)
                 except socket.error as ex:
                     if str(ex) == "[Errno 35] Resource temporarily unavailable":
                         time.sleep(0.01)
@@ -182,24 +191,39 @@ class Server:
                         print ex
                     raise ex
                 
+                if ((node_state['0']['curr_row'] == node_state['0']['next_row']) and (node_state['0']['curr_col'] == node_state['0']['next_col'])):
+                    new_buf = [ 'A', str(node_state['0']['curr_row']), str(node_state['0']['curr_col']) ]
+                    new_msg = ''.join(new_buf) 
+                    queue1.put(new_msg)
+                    queue2.put(new_msg)
+                if ((node_state['1']['curr_row'] == node_state['1']['next_row']) and (node_state['1']['curr_col'] == node_state['1']['next_col'])):
+                    new_buf = [ 'A', str(node_state['1']['curr_row']), str(node_state['2']['curr_col']) ]
+                    new_msg = ''.join(new_buf) 
+                    queue0.put(new_msg)
+                    queue2.put(new_msg)
+                if ((node_state['2']['curr_row'] == node_state['2']['next_row']) and (node_state['2']['curr_col'] == node_state['2']['next_col'])):
+                    new_buf = [ 'A', str(node_state['1']['curr_row']), str(node_state['2']['curr_col']) ]
+                    new_msg = ''.join(new_buf) 
+                    queue0.put(new_msg)
+                    queue1.put(new_msg)
+                
                 if ((node_state['0']['next_row'] == node_state['1']['next_row']) and (node_state['0']['next_col'] == node_state['1']['next_col'])):
                     queue0.put('STOPR')
                     queue1.put('STOP')
-                    continue
-                elif ((node_state['0']['next_row'] == node_state['2']['next_row']) and (node_state['0']['next_col'] == node_state['2']['next_col'])):
+                if ((node_state['0']['next_row'] == node_state['2']['next_row']) and (node_state['0']['next_col'] == node_state['2']['next_col'])):
                     queue0.put('STOPR')
                     queue2.put('STOP')
-                    continue
-                elif ((node_state['1']['next_row'] == node_state['2']['next_row']) and (node_state['1']['next_col'] == node_state['2']['next_col'])):
+                if ((node_state['1']['next_row'] == node_state['2']['next_row']) and (node_state['1']['next_col'] == node_state['2']['next_col'])):
                     queue2.put('STOP')                    
                     queue1.put('STOPR')
-                    continue
+                
                 for thread in self.thread_list:
                     if not thread.isAlive():
                         self.thread_list.remove(thread)
                         thread.join()
         except Exception, err:
             print "Something's wrong. errno = %s" % err
+            print sys.exc_info()
 
         for client in self.client_list:
             client.close()
