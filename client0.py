@@ -100,16 +100,19 @@ class DriverThread(Thread):
             #new avoid_list message
             
             print msg
-            if (msg[0] == 'A' and msg[1] != str(node_id)): 
-                self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
-                (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-            elif (msg[0] == 'R' and msg[1] != str(node_id)):
-                if (self.avoid_list == []):
-                    #do nothing
-                    self.avoid_list = self.avoid_list
-                else:
-                    self.avoid_list.remove((int(msg[2]), int(msg[3]))) #remove row,col pair from list
+            if (msg[0] == 'A'):
+                if (msg[1] != str(node_id) or msg[1] == 'D'): 
+                    self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
                     (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
+            elif (msg[0] == 'R');
+                if (msg[1] != str(node_id) or msg[1] == 'D'):
+                    if (self.avoid_list == []):
+                        #do nothing
+                        print("nothing to remove in avoidlist")
+                        self.avoid_list = self.avoid_list
+                    else:
+                        self.avoid_list.remove((int(msg[2]), int(msg[3]))) #remove row,col pair from list
+                        (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
             elif (msg == 'STOP'):
                 time.sleep(3)
             elif (msg == 'STOPR'):
