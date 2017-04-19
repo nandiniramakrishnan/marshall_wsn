@@ -8,7 +8,6 @@ import RPi.GPIO as GPIO
 import os
 
 #initialize node 0 values
-orient = 'E'
 # Server address
 server_address = ('128.237.201.219', 10000)
 STOPMSG = "STOP"
@@ -87,7 +86,7 @@ class DriverThread(Thread):
         self.next_row = path_coords[1][0]
         self.next_col = path_coords[1][1]
         self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
-
+        msg = 'null'
         while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path_coords) > 1):
             print "in while loop"
             
@@ -96,34 +95,48 @@ class DriverThread(Thread):
                 rerouting = False
 
             if not self.drive_comms_queue.empty():
+                print "drive comms queue not empty!"
                 msg = self.drive_comms_queue.get()
-            #new avoid_list message
+                #new avoid_list message
             
-            print msg
-            if (msg[0] == 'A'):
-                if (msg[1] != str(node_id) or msg[1] == 'D'): 
-                    self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
-                    (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-            elif (msg[0] == 'R');
-                if (msg[1] != str(node_id) or msg[1] == 'D'):
-                    if (self.avoid_list == []):
-                        #do nothing
-                        print("nothing to remove in avoidlist")
-                        self.avoid_list = self.avoid_list
-                    else:
-                        self.avoid_list.remove((int(msg[2]), int(msg[3]))) #remove row,col pair from list
+                print msg
+                if (msg[0] == 'A'):
+                    print ("adding")
+                    if (msg[1] != str(node_id) or msg[1] == 'D'):
+                        print ("adding to avoid list")
+                        self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
                         (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-            elif (msg == 'STOP'):
-                time.sleep(3)
-            elif (msg == 'STOPR'):
-                time.sleep(3) #reroute
-                #reroute....
-                rerouting = True
-                reroute_coord = path_coords[1]; #potential collision at next (row, col)
-                self.avoid_list.append(reroute_coord)
-                (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
+                        self.next_row = path_coords[1][0]
+                        self.next_col = path_coords[1][1]
+                elif (msg[0] == 'R'):
+                    if (msg[1] != str(node_id) or msg[1] == 'D'):
+                        if (self.avoid_list == []):
+                            #do nothing
+                            print("nothing to remove in avoidlist")
+                            self.avoid_list = self.avoid_list
+                        else:
+                            print ("removing from avoid list")
+                            self.avoid_list.remove((int(msg[2]), int(msg[3]))) #remove row,col pair from list
+                            (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
+                            self.next_row = path_coords[1][0]
+                            self.next_col = path_coords[1][1]
+                elif (msg == 'STOP'):
+                    time.sleep(3)
+                elif (msg == 'STOPR'):
+                    time.sleep(3) #reroute
+                    #reroute....
+                    rerouting = True
+                    reroute_coord = path_coords[1]; #potential collision at next (row, col)
+                    self.avoid_list.append(reroute_coord)
+                    (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
+                    self.next_row = path_coords[1][0]
+                    self.next_col = path_coords[1][1]
             
             
+            print "path coords = ",
+            print path_coords
+            print "path dirs = ",
+            print path_dirs
             next_orient = path_dirs[0] #will be "N" "S" "E" or "W"
             if (DF.line_follow(self.curr_orient, next_orient) == 0):
                 print "dont line follow"
@@ -229,7 +242,11 @@ class Node:
                     dest_row = data[1]
                     dest_col = data[2]
                     command_queue.put((dest_row, dest_col))
-            
+           
+                if data != None and (data[0] == 'A' or data[0] == 'R'):
+                    print "adding data to drive comms queue"
+                    drive_comms_queue.put(data)
+
                 if data == STOPMSG:
                     print "Received ",
                     print data
