@@ -6,9 +6,9 @@ import time
 import Queue
 
 server_address = ('', 10000)
-node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0}, 
-        '1':{'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0}, 
-        '2':{'curr_row': 2, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 2, 'next_col': 0} }
+node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'stationary':1}, 
+        '1':{'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0, 'stationary':1}, 
+        '2':{'curr_row': 2, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 2, 'next_col': 0, 'stationary':1} }
 
 class UserInterfaceThread(Thread):
     def __init__(self, queue):
@@ -21,7 +21,9 @@ class UserInterfaceThread(Thread):
         # Filter out invalid commands
         while True:
             command = raw_input("> ")
-            if command.lower() == "quit":
+            if len(command) == 4 and command[0] == "A":
+                self.queue.put(command)
+            elif command.lower() == "quit":
                 print "Quitting marshall..."
                 self.queue.put(command)
             elif command.lower() == "help":
@@ -134,7 +136,11 @@ class Server:
                 # If queue is not empty
                 if not queue.empty():
                     command = queue.get()
-                    if command.lower() == 'quit':
+                    if command[0] == 'A':
+                        print "got an add to avoid list command"
+                        for client in self.client_list:
+                            client.sendall(command)
+                    elif command.lower() == 'quit':
                         for client in self.client_list:
                             client.sendall('quit')
                             client.close()
@@ -144,22 +150,32 @@ class Server:
                         break
                     if command[0] == '0':
                         queue0.put(command)
+                        node_state['0']['stationary'] = 0
                         new_buf = [ 'R', str(node_state['0']['curr_row']), str(node_state['0']['curr_col']) ]
                         new_msg = ''.join(new_buf) 
                         queue1.put(new_msg)
                         queue2.put(new_msg)
                     elif command[0] == '1':
                         queue1.put(command)
+                        node_state['1']['stationary'] = 0
                         new_buf = [ 'R', str(node_state['1']['curr_row']), str(node_state['1']['curr_col']) ]
                         new_msg = ''.join(new_buf) 
                         queue0.put(new_msg)
                         queue2.put(new_msg)
                     elif command[0] == '2':
                         queue2.put(command)
+                        node_state['2']['stationary'] = 0
                         new_buf = [ 'R', str(node_state['2']['curr_row']), str(node_state['2']['curr_col']) ]
                         new_msg = ''.join(new_buf) 
                         queue0.put(new_msg)
                         queue1.put(new_msg)
+
+                for node_id, node_properties in node_state.iteritems():
+                    if node_properties['stationary'] == 0:
+                        avoid_buf = [ 'R', node_id, str(node_properties['curr_row']), str(node_properties['curr_col']) ]
+                        avoid_msg = ''.join(avoid_buf)
+                        for client in self.client_list:
+                            client.sendall(avoid_msg)
                 try:
                     self.sock.settimeout(0.5)
                     client = self.sock.accept()[0]
@@ -191,21 +207,12 @@ class Server:
                         print ex
                     raise ex
                 
-                if ((node_state['0']['curr_row'] == node_state['0']['next_row']) and (node_state['0']['curr_col'] == node_state['0']['next_col'])):
-                    new_buf = [ 'A', str(node_state['0']['curr_row']), str(node_state['0']['curr_col']) ]
-                    new_msg = ''.join(new_buf) 
-                    queue1.put(new_msg)
-                    queue2.put(new_msg)
-                if ((node_state['1']['curr_row'] == node_state['1']['next_row']) and (node_state['1']['curr_col'] == node_state['1']['next_col'])):
-                    new_buf = [ 'A', str(node_state['1']['curr_row']), str(node_state['2']['curr_col']) ]
-                    new_msg = ''.join(new_buf) 
-                    queue0.put(new_msg)
-                    queue2.put(new_msg)
-                if ((node_state['2']['curr_row'] == node_state['2']['next_row']) and (node_state['2']['curr_col'] == node_state['2']['next_col'])):
-                    new_buf = [ 'A', str(node_state['1']['curr_row']), str(node_state['2']['curr_col']) ]
-                    new_msg = ''.join(new_buf) 
-                    queue0.put(new_msg)
-                    queue1.put(new_msg)
+                for node_id, node_properties in node_state.iteritems():
+                    if node_properties['curr_row'] == node_properties['next_row'] and node_properties['curr_col'] == node_properties['next_col']:
+                        avoid_buf = [ 'A', node_id, str(node_properties['curr_row']), str(node_properties['curr_col']) ]
+                        avoid_msg = ''.join(avoid_buf)
+                        for client in self.client_list:
+                            client.sendall(avoid_msg)
                 
                 if ((node_state['0']['next_row'] == node_state['1']['next_row']) and (node_state['0']['next_col'] == node_state['1']['next_col'])):
                     queue0.put('STOPR')
