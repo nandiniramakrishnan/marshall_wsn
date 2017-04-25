@@ -100,38 +100,38 @@ class DriverThread(Thread):
                 #new avoid_list message
             
                 print msg
-                if (msg[0] == 'A'):
-                    print ("adding")
-                    if (msg[1] != str(node_id) or msg[1] == 'D'):
-                        print ("adding to avoid list")
-                        self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
-                        (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-                        self.next_row = path_coords[1][0]
-                        self.next_col = path_coords[1][1]
-                elif (msg[0] == 'R'):
-                    if (msg[1] != str(node_id) or msg[1] == 'D'):
-                        if (self.avoid_list == []):
-                            #do nothing
-                            print("nothing to remove in avoidlist")
-                            self.avoid_list = self.avoid_list
-                        else:
-                            print ("removing from avoid list")
-                            self.avoid_list.remove((int(msg[2]), int(msg[3]))) #remove row,col pair from list
+                if (msg[0] == 'Z'):
+                    if (msg[5] == 'A'):
+                        print ("adding")
+                        if (msg[6] != str(node_id) or msg[6] == 'D'):
+                            print ("adding to avoid list")
+                            self.avoid_list.append((int(msg[7]), int(msg[8]))) #add row,col pair to list
                             (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                             self.next_row = path_coords[1][0]
                             self.next_col = path_coords[1][1]
-                elif (msg == 'STOP'):
-                    time.sleep(3)
-                elif (msg == 'STOPR'):
-                    time.sleep(3) #reroute
-                    #reroute....
-                    rerouting = True
-                    reroute_coord = path_coords[1]; #potential collision at next (row, col)
-                    self.avoid_list.append(reroute_coord)
-                    (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-                    self.next_row = path_coords[1][0]
-                    self.next_col = path_coords[1][1]
-            
+                    elif (msg[5] == 'R'):
+                        if (msg[6] != str(node_id) or msg[6] == 'D'):
+                            if (self.avoid_list == []):
+                                #do nothing
+                                print("nothing to remove in avoidlist")
+                                self.avoid_list = self.avoid_list
+                            else:
+                                print ("removing from avoid list")
+                                self.avoid_list.remove((int(msg[7]), int(msg[8]))) #remove row,col pair from list
+                                (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
+                                self.next_row = path_coords[1][0]
+                                self.next_col = path_coords[1][1]
+                    elif (msg == 'STOP'):
+                        time.sleep(3)
+                    elif (msg == 'STOPR'):
+                        time.sleep(3) #reroute
+                        #reroute....
+                        rerouting = True
+                        reroute_coord = path_coords[1]; #potential collision at next (row, col)
+                        self.avoid_list.append(reroute_coord)
+                        (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
+                        self.next_row = path_coords[1][0]
+                        self.next_col = path_coords[1][1]
             
             print "path coords = ",
             print path_coords
