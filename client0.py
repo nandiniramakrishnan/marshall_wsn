@@ -101,7 +101,7 @@ class DriverThread(Thread):
                 if (msg[0] == 'A'):
                     print ("adding")
                     if (msg[1] != str(self.node_id) or msg[1] == 'D'):
-                        if (int(msg[2]), int(msg[3])) not in self.avoid_list):
+                        if ((int(msg[2]), int(msg[3])) not in self.avoid_list):
                             print ("adding to avoid list")
                             self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
                             (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
@@ -109,7 +109,7 @@ class DriverThread(Thread):
                             self.next_col = path_coords[1][1]
                 elif (msg[0] == 'R'):
                     if (msg[1] != str(self.node_id) or msg[1] == 'D'):
-                        if (self.avoid_list == [] or ((int(msg[2], int(msg[3]) not in avoid_list)):
+                        if (self.avoid_list == [] or ((int(msg[2]), int(msg[3])) not in avoid_list)):
                             #do nothing
                             print("nothing to remove in avoidlist")
                             self.avoid_list = self.avoid_list
