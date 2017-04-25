@@ -9,7 +9,7 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.201.219', 10000)
+server_address = ('128.237.190.194', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STOPR"
 
@@ -45,13 +45,10 @@ class MarshallCommsThread(Thread):
                 curr_orient = new_pos[2]
                 next_row = new_pos[3]
                 next_col = new_pos[4]
-                if curr_row == 'q' and curr_col == 'u':
-                    print "got quit"
-                    break
                 new_buf = [ str(self.node_id), str(curr_row), str(curr_col), str(curr_orient), str(next_row), str(next_col) ]
                 new_msg = ''.join(new_buf)
-                print new_msg
                 self.sock.sendall(new_msg)
+                
         print "closing sock in mct" 
         self.sock.close()
         return
@@ -61,8 +58,9 @@ class MarshallCommsThread(Thread):
 # Communication with MARSHALL_COMMS_THREAD will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 class DriverThread(Thread):
-    def __init__(self, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue):
+    def __init__(self, node_id, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue):
         Thread.__init__(self)
+        self.node_id = node_id
         self.curr_row = curr_row
         self.curr_col = curr_col
         self.curr_orient = curr_orient
@@ -73,9 +71,9 @@ class DriverThread(Thread):
         self.avoid_list = avoid_list
         self.drive_comms_queue = drive_comms_queue
         self.update_node_queue = update_node_queue
-
+        self.avoid_list_queue = avoid_list_queue
+    
     def run(self):
-
         rerouting = False
         # Obtain directions to the destination and store in path
         (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
@@ -94,23 +92,24 @@ class DriverThread(Thread):
                 self.avoid_list.remove(reroute_coord)
                 rerouting = False
 
-            if not self.drive_comms_queue.empty():
+            if not self.avoid_list_queue.empty():
                 print "drive comms queue not empty!"
-                msg = self.drive_comms_queue.get()
+                msg = self.avoid_list_queue.get()
                 #new avoid_list message
             
                 print msg
                 if (msg[0] == 'A'):
                     print ("adding")
-                    if (msg[1] != str(node_id) or msg[1] == 'D'):
-                        print ("adding to avoid list")
-                        self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
-                        (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-                        self.next_row = path_coords[1][0]
-                        self.next_col = path_coords[1][1]
+                    if (msg[1] != str(self.node_id) or msg[1] == 'D'):
+                        if ((int(msg[2]), int(msg[3])) not in self.avoid_list):
+                            print ("adding to avoid list")
+                            self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
+                            (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
+                            self.next_row = path_coords[1][0]
+                            self.next_col = path_coords[1][1]
                 elif (msg[0] == 'R'):
-                    if (msg[1] != str(node_id) or msg[1] == 'D'):
-                        if (self.avoid_list == []):
+                    if (msg[1] != str(self.node_id) or msg[1] == 'D'):
+                        if (self.avoid_list == [] or ((int(msg[2]), int(msg[3])) not in avoid_list)):
                             #do nothing
                             print("nothing to remove in avoidlist")
                             self.avoid_list = self.avoid_list
@@ -132,14 +131,14 @@ class DriverThread(Thread):
                     self.next_row = path_coords[1][0]
                     self.next_col = path_coords[1][1]
             
-            
+            print "avoid_list", 
+            print self.avoid_list
             print "path coords = ",
             print path_coords
             print "path dirs = ",
             print path_dirs
             next_orient = path_dirs[0] #will be "N" "S" "E" or "W"
             if (DF.line_follow(self.curr_orient, next_orient) == 0):
-                print "dont line follow"
                 #update curr and next locs
                 if len(path_coords) == 2:
                     self.next_row = path_coords[1][0]
@@ -189,13 +188,17 @@ class Node:
 
         chk_msg = 'CHK'+str(self.node_id)+str(self.curr_row)+str(self.curr_col)
         received_ack = False
+        #
         drive_comms_queue = Queue.Queue()
         command_queue = Queue.Queue()
         quit_queue = Queue.Queue()
         update_node_queue = Queue.Queue()
+        avoid_list_queue = Queue.Queue()
+        #
         quit_thread = QuitThread(quit_queue)
         self.thread_list.append(quit_thread)
         quit_thread.start()
+        #
         send_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id)  
         self.thread_list.append(send_thread)
         send_thread.start()
@@ -243,9 +246,11 @@ class Node:
                     dest_col = data[2]
                     command_queue.put((dest_row, dest_col))
            
-                if data != None and (data[0] == 'A' or data[0] == 'R'):
-                    print "adding data to drive comms queue"
-                    drive_comms_queue.put(data)
+                if data != None and len(data) == 4 and (data[0] == 'A' or data[0] == 'R'):
+                    print ("Received add or Remove from marshall!")
+                    #print(data)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    avoid_list_queue.put(new_buf)
 
                 if data == STOPMSG:
                     print "Received ",
@@ -268,14 +273,14 @@ class Node:
                     break
                 raise ex
             if not quit_queue.empty():
-                print "putting qu in drive comms queue"
-                drive_comms_queue.put("qu")
+                #print "putting qu in drive comms queue"
+                #drive_comms_queue.put("qu")
                 break
 
             if self.drivingState == False and not command_queue.empty():
                 print "gonna start driving!"
                 (dest_row, dest_col) = command_queue.get()
-                drivingThread = DriverThread(self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue)
+                drivingThread = DriverThread(self.node_id, self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue)
                 self.drivingState = True
                 self.thread_list.append(drivingThread)
                 drivingThread.start()
