@@ -85,7 +85,7 @@ class DriverThread(Thread):
         print path_dirs
         self.next_row = path_coords[1][0]
         self.next_col = path_coords[1][1]
-        self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
+        self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, 'Z','Z','Z','Z'))
         msg = 'null'
         while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path_coords) > 1):
             print "in while loop"
@@ -153,7 +153,7 @@ class DriverThread(Thread):
                 #update path coords and dirs
                 path_coords = path_coords[1:]
                 path_dirs = path_dirs[1:]
-                self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
+                self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, 'Z','Z','Z','Z'))
             else:
                 #move was unsuccessful
                 print "went off grid, mission failed"
@@ -245,6 +245,8 @@ class Node:
            
                 if data != None and (data[0] == 'A' or data[0] == 'R'):
                     print "adding data to drive comms queue"
+                    new_buf = [ 'Z','Z','Z','Z','Z', data[0], data[1], data[2], data[3]]
+                    new_msg = ''.join(new_buf)
                     drive_comms_queue.put(data)
 
                 if data == STOPMSG:
@@ -268,8 +270,8 @@ class Node:
                     break
                 raise ex
             if not quit_queue.empty():
-                print "putting qu in drive comms queue"
-                drive_comms_queue.put("qu")
+                #print "putting qu in drive comms queue"
+                #drive_comms_queue.put("qu")
                 break
 
             if self.drivingState == False and not command_queue.empty():
