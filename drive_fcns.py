@@ -67,13 +67,13 @@ def line_follow(curr_orient, direction):
     color = []
 
     motors.setSpeeds(v2, v2)
-    time.sleep(0.5)
+    time.sleep(0.4)
 
-    print("in line follow")
+#    print("in line follow")
 
     while color != [2,2,2,2,2,2]: # Main loop
         # Repeat this loop every delay seconds
-        print("in line f while")
+        #print("in line f while")
         time.sleep (delay)
         color = get_color()
 	if color == [2,2,2,2,2,2]:
@@ -137,12 +137,12 @@ def line_follow(curr_orient, direction):
             if moving == "L":
                 motors.setSpeeds(-v1, v2)
                 moving = "L"
-                print("off grid, go left!")
+#                print("off grid, go left!")
             # Departure from right curve: narrow radius
             elif moving == "R":
                 motors.setSpeeds(v2, -v1)
                 moving = "R"
-                print("off grid, go right!")
+#                print("off grid, go right!")
 
         # Swang to the right: turn left
         elif (color[0:3] == [0, 2, 2]) or (color[0:3] == [2, 2, 0]) \
@@ -166,7 +166,7 @@ def line_follow(curr_orient, direction):
 
         color = [] #clear color array
 
-    print("intersection reached")
+    #print("intersection reached")
     motors.setSpeeds(0,0)
     return 0
 
