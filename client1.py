@@ -126,8 +126,8 @@ class DriverThread(Thread):
     
                 elif (msg == 'STPR'):
                     print("Stop Rerouting!")
-                    motors.setSpeeds(0,0)
-                    time.sleep(3) #reroute
+                    #motors.setSpeeds(0,0)
+                    #time.sleep(3) #reroute
                     #reroute....
                     rerouting = True
                     reroute_coord = path_coords[1]; #potential collision at next (row, col)
@@ -260,11 +260,16 @@ class Node:
                 if data == "STOP":
                     print "Received ",
                     print data
-                    avoid_list_queue.put(data)
+                    print("stopping!")
+                    motors.setSpeeds(0,0)
+                    time.sleep(3)
 
                 if data == "STPR":
                     print "Received %s" % data
+                    print("Stop Rerouting!")
+                    motors.setSpeeds(0,0)
                     avoid_list_queue.put(data)
+                    time.sleep(3)
 
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
