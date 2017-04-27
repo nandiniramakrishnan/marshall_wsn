@@ -45,8 +45,9 @@ class MarshallCommsThread(Thread):
                 curr_orient = new_pos[2]
                 next_row = new_pos[3]
                 next_col = new_pos[4]
-                next_orient = new_pos[5]
-                new_buf = [ str(self.node_id), str(curr_row), str(curr_col), str(curr_orient), str(next_row), str(next_col), str(next_orient)]
+                nextnextrow = new_pos[5]
+                nextnextcol = new_pos[6]
+                new_buf = [ str(self.node_id), str(curr_row), str(curr_col), str(curr_orient), str(next_row), str(next_col), str(nextnextrow), str(nextnextcol)]
                 new_msg = ''.join(new_buf)
                 self.sock.sendall(new_msg)
                 
@@ -89,7 +90,7 @@ class DriverThread(Thread):
         #    nextDir = self.curr_orient
         if len(path_coords) > 2:
             nextnextrow = path_coords[2][0]
-            nextnextcol = path_coorsd[2][1]
+            nextnextcol = path_coords[2][1]
         else:
             nextnextrow = self.next_row
             nextnextcol = self.next_col
@@ -130,13 +131,13 @@ class DriverThread(Thread):
                             (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                             self.next_row = path_coords[1][0]
                             self.next_col = path_coords[1][1]
-                elif (msg == 'STOP'):
-                    print("stopping!")
+                elif (msg[0] == 'S' and msg[3] == 'P'):
+                    print("in stop")
                     motors.setSpeeds(0,0)
                     time.sleep(3)
     
-                elif (msg == 'STPR'):
-                    print("Stop Rerouting!")
+                elif (msg[0] == 'S' and msg[3] =='R'):
+                    print("in stopr")
                     #motors.setSpeeds(0,0)
                     #time.sleep(3) #reroute
                     #reroute....
@@ -284,13 +285,16 @@ class Node:
                     print data
                     print("stopping!")
                     motors.setSpeeds(0,0)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    avoid_list_queue.put(new_buf)
                     time.sleep(3)
 
                 if data != None and data == "STPR":
                     print "Received %s" % data
                     print("Stop Rerouting!")
                     motors.setSpeeds(0,0)
-                    avoid_list_queue.put(data)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    avoid_list_queue.put(new_buf)
                     time.sleep(3)
 
             except socket.error as ex:
