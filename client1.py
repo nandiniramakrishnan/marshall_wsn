@@ -271,6 +271,8 @@ class Node:
         self.thread_list = []
         self.next_row = next_row
         self.next_col = next_col
+        self.nextnextrow = next_row
+        self.nextnextcol = next_col
         self.avoid_list = avoid_list
 
     def run(self):
@@ -341,7 +343,7 @@ class Node:
             if self.drivingState == False and not command_queue.empty():
                 print "gonna start driving!"
                 (dest_row, dest_col) = command_queue.get()
-                drivingThread = DriverThread(self.node_id, self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue)
+                drivingThread = DriverThread(self.node_id, self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, self.nextnextrow, self.nextnextcol)
                 self.drivingState = True
                 self.thread_list.append(drivingThread)
                 drivingThread.start()
