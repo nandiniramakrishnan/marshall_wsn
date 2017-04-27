@@ -102,7 +102,7 @@ class Server:
         collision_pos_b = [node_b['next_row'], node_b['next_col']]
         collision_pos_next_b = [node_b['next_next_row'], node_b['next_next_col']]
 
-        if collision_pos_a == collision_pos_next_b or collision_pos_b == collision_pos_next_a:
+        if collision_pos_a == collision_pos_next_b or collision_pos_a == collision_pos_b or collition_pos_next_a==collision_pos_next_b or collision_pos_b == collision_pos_next_a:
             return True
         else:
             return False
