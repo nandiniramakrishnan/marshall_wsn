@@ -84,19 +84,19 @@ class MarshallCommsThread(Thread):
                 if data != None and data == "STOP":
                     print "Received ",
                     print data
-                    print("stopping!")
-                    motors.setSpeeds(0,0)
-                    #new_buf = (data[0], data[1], data[2], data[3])
-                    #self.avoid_list_queue.put(new_buf)
-                    time.sleep(5)
+                    #print("stopping!")
+                    #motors.setSpeeds(0,0)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    self.avoid_list_queue.put(new_buf)
+                    #time.sleep(5)
 
                 if data != None and data[0] == "S" and data[1] == "R":
                     print "Received %s" % data
                     print("Stop Rerouting!")
-                    motors.setSpeeds(0,0)
+                    # motors.setSpeeds(0,0)
                     new_buf = (data[0], data[1], data[2], data[3])
                     self.avoid_list_queue.put(new_buf)
-                    time.sleep(3)
+                    #time.sleep(3)
 
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
@@ -193,8 +193,8 @@ class DriverThread(Thread):
                             (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                             self.next_row = path_coords[1][0]
                             self.next_col = path_coords[1][1]
-                elif (msg[0] == 'S' and msg[3] == 'P'):
-                    print("in stop")
+                elif (msg[0] == 'S' and msg[1] == 'T'):
+                    print("                 in stop")
                     motors.setSpeeds(0,0)
                     time.sleep(3)
     
@@ -232,7 +232,7 @@ class DriverThread(Thread):
                 
                 if len(path_coords) > 3:
                     self.nextnextrow = path_coords[3][0]
-                    self.nextnextrow = path_coords[3][1]
+                    self.nextnextcol = path_coords[3][1]
                 else:
                     self.nextnextrow = self.next_row
                     self.nextnextcol = self.next_col
