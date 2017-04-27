@@ -304,7 +304,7 @@ def turn(direction):
 	    motors.setSpeeds(-speed, speed)
         time.sleep(0.1)
         color = get_color()
-        print(color)
+        #print(color)
 
     motors.setSpeeds(0,0)
     return
