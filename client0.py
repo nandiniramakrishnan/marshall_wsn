@@ -9,7 +9,7 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.165.103', 10000)
+server_address = ('128.237.143.235', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STPR"
 
@@ -84,19 +84,19 @@ class MarshallCommsThread(Thread):
                 if data != None and data == "STOP":
                     print "Received ",
                     print data
-                    print("stopping!")
-                    motors.setSpeeds(0,0)
-                    #new_buf = (data[0], data[1], data[2], data[3])
-                    #self.avoid_list_queue.put(new_buf)
-                    time.sleep(5)
+                    #print("stopping!")
+                    #motors.setSpeeds(0,0)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    self.avoid_list_queue.put(new_buf)
+                    #time.sleep(5)
 
                 if data != None and data[0] == "S" and data[1] == "R":
                     print "Received %s" % data
                     print("Stop Rerouting!")
-                    motors.setSpeeds(0,0)
+                    # motors.setSpeeds(0,0)
                     new_buf = (data[0], data[1], data[2], data[3])
                     self.avoid_list_queue.put(new_buf)
-                    time.sleep(3)
+                    #time.sleep(3)
 
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
@@ -181,6 +181,12 @@ class DriverThread(Thread):
                             (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                             self.next_row = path_coords[1][0]
                             self.next_col = path_coords[1][1]
+                            if len(path_coords) > 2:
+                                self.nextnextrow = path_coords[2][0]
+                                self.nextnextcol = path_coords[2][1]
+                            else:
+                                self.nextnextrow = self.next_row
+                                self.nextnextcol = self.next_col
                 elif (msg[0] == 'R'):
                     if (msg[1] != str(self.node_id) or msg[1] == 'D'):
                         if (self.avoid_list == [] or ((int(msg[2]), int(msg[3])) not in avoid_list)):
@@ -193,23 +199,39 @@ class DriverThread(Thread):
                             (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                             self.next_row = path_coords[1][0]
                             self.next_col = path_coords[1][1]
-                elif (msg[0] == 'S' and msg[3] == 'P'):
-                    print("in stop")
+                            if len(path_coords) > 2:
+                                self.nextnextrow = path_coords[2][0]
+                                self.nextnextcol = path_coords[2][1]
+                            else:
+                                self.nextnextrow = self.next_row
+                                self.nextnextcol = self.next_col
+                elif (msg[0] == 'S' and msg[1] == 'T'):
+                    print("                 in stop")
                     motors.setSpeeds(0,0)
-                    time.sleep(3)
+                    time.sleep(2)
     
                 elif (msg[0] == 'S' and msg[1] =='R'):
                     print("in stopr")
                     #motors.setSpeeds(0,0)
                     #time.sleep(3) #reroute
                     #reroute....
-                    rerouting = True
                     #reroute_coord = path_coords[1]; #potential collision at next (row, col)
                     reroute_coords = (int(msg[2]), int(msg[3]))
-                    self.avoid_list.append(reroute_coords)
+                    if ((int(msg[2]), int(msg[3])) not in self.avoid_list) and not (int(msg[2]) == self.dest_row and int(msg[3]) == self.dest_col):
+                        self.avoid_list.append(reroute_coords)
+                        rerouting = True
+                        if (int(msg[2]) == self.dest_row and int(msg[3]) == self.dest_col):
+                            motors.setSpeeds(0,0)
+                            time.sleep(2)
                     (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                     self.next_row = path_coords[1][0]
                     self.next_col = path_coords[1][1]
+                    if len(path_coords) > 2:
+                        self.nextnextrow = path_coords[2][0]
+                        self.nextnextcol = path_coords[2][1]
+                    else:
+                        self.nextnextrow = self.next_row
+                        self.nextnextcol = self.next_col
             
             print "avoid_list", 
             print self.avoid_list
@@ -375,10 +397,10 @@ class Node:
 if "__main__" == __name__:
     node_id = 0
     curr_row = 0
-    curr_col = 0
-    curr_orient = 'E'
+    curr_col = 3
+    curr_orient = 'S'
     next_row = 0
-    next_col = 0
+    next_col = 3
     avoid_list = []
     node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list)
     node.run()
