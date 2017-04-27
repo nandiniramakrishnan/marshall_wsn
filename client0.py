@@ -9,7 +9,7 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.190.194', 10000)
+server_address = ('128.237.165.203', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STOPR"
 
@@ -92,7 +92,7 @@ class DriverThread(Thread):
                 self.avoid_list.remove(reroute_coord)
                 rerouting = False
 
-            if not self.avoid_list_queue.empty():
+            while not self.avoid_list_queue.empty():
                 print "drive comms queue not empty!"
                 msg = self.avoid_list_queue.get()
                 #new avoid_list message
@@ -120,8 +120,12 @@ class DriverThread(Thread):
                             self.next_row = path_coords[1][0]
                             self.next_col = path_coords[1][1]
                 elif (msg == 'STOP'):
+                    print("stopping")
+                    motors.setSpeeds(0,0)
                     time.sleep(3)
-                elif (msg == 'STOPR'):
+                elif (msg == 'STPR'):
+                    print ("stopr")
+                    motors.setSpeeds(0,0)
                     time.sleep(3) #reroute
                     #reroute....
                     rerouting = True
@@ -130,7 +134,7 @@ class DriverThread(Thread):
                     (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                     self.next_row = path_coords[1][0]
                     self.next_col = path_coords[1][1]
-            
+
             print "avoid_list", 
             print self.avoid_list
             print "path coords = ",
@@ -210,7 +214,7 @@ class Node:
         # Look for the ACK from marshall
         while not received_ack:
             try:
-                data = self.sock.recv(16)
+                data = self.sock.recv(3)
                 if not quit_queue.empty():
                     break
 
@@ -235,7 +239,7 @@ class Node:
         while True:
             # Listen data
             try:
-                data = self.sock.recv(16)
+                data = self.sock.recv(4)
                 
                 if data != None and len(data) >= 4 and data[0:4] == "quit":
                     break
@@ -246,18 +250,19 @@ class Node:
                     dest_col = data[2]
                     command_queue.put((dest_row, dest_col))
            
-                if data != None and len(data) == 4 and (data[0] == 'A' or data[0] == 'R'):
+                if data != None  and (data[0] == 'A' or data[0] == 'R'):
                     print ("Received add or Remove from marshall!")
-                    #print(data)
+                    print(data)
                     new_buf = (data[0], data[1], data[2], data[3])
                     avoid_list_queue.put(new_buf)
 
-                if data == STOPMSG:
+                if data == "STOP":
                     print "Received ",
                     print data
 
-                if data == STOPREROUTEMSG:
+                if data == "STPR":
                     print "Received %s" % data
+
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
                     time.sleep(0.01)
