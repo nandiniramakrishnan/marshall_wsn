@@ -38,33 +38,26 @@ class UserInterfaceThread(Thread):
                 print "Invalid column. Try again."
             else:
                 # Adding proper commands to the queue
-                command_buf = [ 'R', command[0], command[1], command[2] ]
-                command_msg = ''.join(command_buf)
-                self.queue.put(command_msg)
+                self.queue.put(command)
                 
         return
 
 class ClientThread(Thread):
-    def __init__(self, client_sock, queue, node_id, avoid_list_queue):
+    def __init__(self, client_sock, queue, node_id):
         Thread.__init__(self)
         self.client = client_sock
         self.queue = queue
         self.node_id = node_id
-        self.avoid_list_queue = avoid_list_queue
     
     def run(self):
 
         # Start receiving commands from marshall
         while True:
-            # if client sock is not up
             
             if not self.queue.empty():
                 command = self.queue.get()
-                self.client.sendall(command[1:4])
+                self.client.sendall(command)
             
-#            while not self.avoid_list_queue.empty():
-#                command = self.avoid_list_queue.get()
-#                self.client.sendall(command)
             try:
                 data = self.client.recv(6)
                 if len(data) == 6:
@@ -81,9 +74,6 @@ class ClientThread(Thread):
                 elif str(ex) == "[Errno 54] Connection reset by peer":
                     print "Connection reset. Maybe the original client ended. Try again?"
                     continue
-                #elif str(ex) == "[Errno 9] Bad file descriptor":
-                #    print "Client's dead.. ending this thread."
-                #    break
                 elif str(ex) == "[Errno 32] Broken pipe":
                     print "broken pipe"
                     break
@@ -133,7 +123,6 @@ class Server:
         queue0 = Queue.Queue()
         queue1 = Queue.Queue()
         queue2 = Queue.Queue()
-        avoid_list_queue = Queue.Queue()
         print "Server is listening for incoming connections"
         ui_thread = UserInterfaceThread(queue)
         self.thread_list.append(ui_thread)
@@ -152,33 +141,40 @@ class Server:
                             thread.join(1.0)
                         self.sock.close()
                         break
-                    # Received Drive commands
-                    if command[0] == 'R':
-                        avoid_buf = [ 'A', command[1], str(node_state[command[1]]['curr_row']), str(node_state[command[1]]['curr_col']) ]
-                        avoid_msg = ''.join(avoid_buf)
-                        if avoid_msg in self.avoid_list:
-                            self.avoid_list.remove(avoid_msg)
-                            remove_msg = "R"+avoid_msg[1:4]
-                            for client in self.client_list:
-                                client.sendall(remove_msg)
-                        if command[1] == '0':
-                            queue0.put(command)
-                        elif command[1] == '1':
-                            queue1.put(command)
-                        elif command[1] == '2':
-                            queue2.put(command)
+                    if command[0] == '0':
+                        queue0.put(command)
+                    elif command[0] == '1':
+                        queue1.put(command)
+                    elif command[0] == '2':
+                        queue2.put(command)
+                    remove_buf = [ command[0], str(node_state[command[0]]['curr_row']), str(node_state[command[0]]['curr_col']) ]
+                    remove_msg = ''.join(remove_buf)
+
+                    if remove_msg in self.avoid_list:
+                        self.avoid_list.remove(remove_msg)
+                        for client in self.client_list:
+                            client.sendall("R"+remove_msg)
+                time.sleep(0.5)
                 for node_id, node_properties in node_state.iteritems():
                     if node_properties['curr_row'] == node_properties['next_row'] and node_properties['curr_col'] == node_properties['next_col']:
-                        avoid_buf = [ 'A', node_id, str(node_properties['curr_row']), str(node_properties['curr_col']) ]
+                        avoid_buf = [ node_id, str(node_properties['curr_row']), str(node_properties['curr_col']) ]
                         avoid_msg = ''.join(avoid_buf)
                         if avoid_msg not in self.avoid_list and len(self.client_list) == 2:
-                            for client in self.client_list:
-                                client.sendall(avoid_msg)
                             self.avoid_list.append(avoid_msg)
+                            for client in self.client_list:
+                                client.sendall("A"+avoid_msg)
+                if ((node_state['0']['next_row'] == node_state['1']['next_row']) and (node_state['0']['next_col'] == node_state['1']['next_col'])):
+                    queue0.put('STPR')
+                    queue1.put('STOP')
+                if ((node_state['0']['next_row'] == node_state['2']['next_row']) and (node_state['0']['next_col'] == node_state['2']['next_col'])):
+                    queue0.put('STPR')
+                    queue2.put('STOP')
+                if ((node_state['1']['next_row'] == node_state['2']['next_row']) and (node_state['1']['next_col'] == node_state['2']['next_col'])):
+                    queue2.put('STOP')                    
+                    queue1.put('STPR')
                 try:
                     self.sock.settimeout(0.5)
                     client = self.sock.accept()[0]
-                    print client
                 except socket.timeout:
                     time.sleep(1)
                     continue
@@ -188,11 +184,11 @@ class Server:
                         curr_row = data[4]
                         curr_col = data[5]
                         if data[3] == '0':
-                            new_thread = ClientThread(client, queue0, data[3], avoid_list_queue)
+                            new_thread = ClientThread(client, queue0, data[3])
                         elif data[3] == '1':
-                            new_thread = ClientThread(client, queue1, data[3], avoid_list_queue)
+                            new_thread = ClientThread(client, queue1, data[3])
                         elif data[3] == '2':
-                            new_thread = ClientThread(client, queue2, data[3], avoid_list_queue)
+                            new_thread = ClientThread(client, queue2, data[3])
                         print "Received CHK, sending ACK..."
                         self.client_list.append(client)
                         self.thread_list.append(new_thread)
@@ -206,15 +202,6 @@ class Server:
                         print ex
                     raise ex
                 
-                #if ((node_state['0']['next_row'] == node_state['1']['next_row']) and (node_state['0']['next_col'] == node_state['1']['next_col'])):
-                    #queue0.put('STOPR')
-                    #queue1.put('STOP')
-                #if ((node_state['0']['next_row'] == node_state['2']['next_row']) and (node_state['0']['next_col'] == node_state['2']['next_col'])):
-                    #queue0.put('STOPR')
-                    #queue2.put('STOP')
-                #if ((node_state['1']['next_row'] == node_state['2']['next_row']) and (node_state['1']['next_col'] == node_state['2']['next_col'])):
-                    #queue2.put('STOP')                    
-                    #queue1.put('STOPR')
                 for thread in self.thread_list:
                     if not thread.isAlive():
                         self.thread_list.remove(thread)
