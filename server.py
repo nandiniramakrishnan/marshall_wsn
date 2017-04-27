@@ -6,9 +6,9 @@ import time
 import Queue
 
 server_address = ('', 10000)
-node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'next_next_row': 0, 'next_next_col': 0 }, 
-        '1':{'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0, 'next_next_row': 1, 'next_next_col': 0 }, 
-        '2':{'curr_row': 2, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 2, 'next_col': 0, 'next_next_row': 2, 'next_next_col': 0 } }
+node_state = {'0':{'node_id':0, 'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'next_next_row': 0, 'next_next_col': 0 }, 
+        '1':{'node_id':1, 'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0, 'next_next_row': 1, 'next_next_col': 0 }, 
+        '2':{'node_id':2, 'curr_row': 3, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 3, 'next_col': 0, 'next_next_row': 3, 'next_next_col': 0 } }
 
 class UserInterfaceThread(Thread):
     def __init__(self, queue):
@@ -104,22 +104,18 @@ class Server:
         collision_pos_b = [node_b['next_row'], node_b['next_col']]
         collision_pos_next_b = [node_b['next_next_row'], node_b['next_next_col']]
 
-#        if curr_pos_a == collision_pos_b:
-#            if collision_pos_a == collision_pos_next_b
-#            print "curr 0 == next 1"
-#            return collision_pos_a
-#        if collision_pos_a == curr_pos_b:
-#            print "curr 1 == next 0"
-#            return collision_pos_next_a
         if collision_pos_a == collision_pos_next_b:
             print "next 0 == next next 1"
-            return collision_pos_next_a
+            return (node_b['node_id'], collision_pos_a)
         if collision_pos_b == collision_pos_next_a:
             print "next 1 == next next 0"
-            return collision_pos_next_a
+            return (node_a['node_id'], collision_pos_next_a)
         if collision_pos_a == collision_pos_b:
             print "next 0 == next 1"
-            return collision_pos_a
+            return (node_a['node_id'], collision_pos_a)
+        if collision_pos_next_a == collision_pos_next_b:
+            print "next next 0 == next next 1"
+            return (node_a['node_id'], collision_pos_next_a)
         else:
             return None
 
@@ -212,22 +208,34 @@ class Server:
                 collision02 = self.check_collision(node_state['0'], node_state['2'])
                 collision12 = self.check_collision(node_state['1'], node_state['2'])
                 if collision01 != None:
-                    avoid_buf = ['S', 'R', str(collision01[0]), str(collision01[1])]
+                    avoid_buf = ['S', 'R', str(collision01[1][0]), str(collision01[1][1])]
                     avoid_msg = ''.join(avoid_buf)
-                    queue0.put(avoid_msg)
-                    queue1.put('STOP')
+                    if collision01[0] == 0:
+                        queue0.put(avoid_msg)
+                        queue1.put('STOP')
+                    else:
+                        queue1.put(avoid_msg)
+                        queue0.put('STOP')
                     print "collision detected! avoid_msg = %s" % avoid_msg
                 if collision02 != None:
-                    avoid_buf = ['S', 'R', str(collision02[0]), str(collision02[1])]
+                    avoid_buf = ['S', 'R', str(collision02[1][0]), str(collision02[1][1])]
                     avoid_msg = ''.join(avoid_buf)
-                    queue0.put(avoid_msg)
-                    queue2.put('STOP')
+                    if collision02[0] == 0:
+                        queue0.put(avoid_msg)
+                        queue2.put('STOP')
+                    else:
+                        queue2.put(avoid_msg)
+                        queue0.put('STOP')
                     print "collision detected! avoid_msg = %s" % avoid_msg
                 if collision12 != None:
-                    avoid_buf = ['S', 'R', str(collision12[0]), str(collision12[1])]
+                    avoid_buf = ['S', 'R', str(collision12[1][0]), str(collision12[1][1])]
                     avoid_msg = ''.join(avoid_buf)
-                    queue1.put(avoid_msg)
-                    queue2.put('STOP')
+                    if collision12[0] == 1:
+                        queue1.put(avoid_msg)
+                        queue2.put('STOP')
+                    else:
+                        queue2.put(avoid_msg)
+                        queue1.put('STOP')
                     print "collision detected! avoid_msg = %s" % avoid_msg
                 
                 try:
