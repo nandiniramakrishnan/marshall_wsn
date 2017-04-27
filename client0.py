@@ -220,9 +220,9 @@ class DriverThread(Thread):
                     if ((int(msg[2]), int(msg[3])) not in self.avoid_list) and not (int(msg[2]) == self.dest_row and int(msg[3]) == self.dest_col):
                         self.avoid_list.append(reroute_coords)
                         rerouting = True
-                        if (int(msg[2]) == self.dest_row and int(msg[3]) == self.dest_col):
-                            motors.setSpeeds(0,0)
-                            time.sleep(2)
+                    elif (int(msg[2]) == self.dest_row and int(msg[3]) == self.dest_col):
+                        motors.setSpeeds(0,0)
+                        time.sleep(2)
                     (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                     self.next_row = path_coords[1][0]
                     self.next_col = path_coords[1][1]
