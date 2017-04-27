@@ -9,7 +9,7 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.165.203', 10000)
+server_address = ('128.237.196.247', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STPR"
 
@@ -30,22 +30,76 @@ class QuitThread(Thread):
 
 # This class sends messages to the Marshall while driving
 class MarshallCommsThread(Thread):
-    def __init__(self, sock, queue, node_id):
+    def __init__(self, sock, drive_comms_queue, node_id, command_queue, avoid_list_queue):
         Thread.__init__(self)
         self.sock = sock
-        self.queue = queue
+        self.drive_comms_queue = drive_comms_queue
         self.node_id = node_id
+        self.command_queue = command_queue
+        self.avoid_list_queue = avoid_list_queue
 
     def run(self):
         while True:
-            if not self.queue.empty():
-                new_pos = self.queue.get()
+            # Listen data
+            try:
+                data = self.sock.recv(4)
+                
+                if data != None and len(data) >= 4 and data[0:4] == "quit":
+                    break
+                # You received a command!
+                if data != None and len(data) == 3 and data[0] == str(self.node_id):
+                    print 'Received "%s"' % data
+                    dest_row = data[1]
+                    dest_col = data[2]
+                    command_queue.put((dest_row, dest_col))
+           
+                if data != None  and (data[0] == 'A' or data[0] == 'R'):
+                    print ("Received add or Remove from marshall!")
+                    print(data)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    avoid_list_queue.put(new_buf)
+
+                if data != None and data == "STOP":
+                    print "Received ",
+                    print data
+                    print("stopping!")
+                    motors.setSpeeds(0,0)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    avoid_list_queue.put(new_buf)
+                    time.sleep(3)
+
+                if data != None and data == "STPR":
+                    print "Received %s" % data
+                    print("Stop Rerouting!")
+                    motors.setSpeeds(0,0)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    avoid_list_queue.put(new_buf)
+                    time.sleep(3)
+
+            except socket.error as ex:
+                if str(ex) == "[Errno 35] Resource temporarily unavailable":
+                    time.sleep(0.01)
+                    continue
+                elif str(ex) == "[Errno 54] Connection reset by peer":
+                    print "Connection reset. Maybe the original client ended. Try again?"
+                    continue
+                elif str(ex) == "[Errno 9] Bad file descriptor":
+                    print "Client's dead.. ending this thread."
+                    break
+                elif str(ex) == "[Errno 32] Broken pipe":
+                    print "broken pipe"
+                    break
+                raise ex
+            if not self.drive_comms_queue.empty():
+                new_pos = self.drive_comms_queue.get()
                 curr_row = new_pos[0]
                 curr_col = new_pos[1]
                 curr_orient = new_pos[2]
                 next_row = new_pos[3]
                 next_col = new_pos[4]
-                new_buf = [ str(self.node_id), str(curr_row), str(curr_col), str(curr_orient), str(next_row), str(next_col) ]
+                nextnextrow = new_pos[5]
+                nextnextcol = new_pos[6]
+                new_buf = [ str(self.node_id), str(curr_row), str(curr_col), str(curr_orient), str(next_row), str(next_col), str(nextnextrow), str(nextnextcol)]
                 new_msg = ''.join(new_buf)
                 self.sock.sendall(new_msg)
                 
@@ -83,9 +137,19 @@ class DriverThread(Thread):
         print path_dirs
         self.next_row = path_coords[1][0]
         self.next_col = path_coords[1][1]
-        self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
+        #nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
+        #if nextDir == "Null":
+        #    nextDir = self.curr_orient
+        if len(path_coords) > 2:
+            nextnextrow = path_coords[2][0]
+            nextnextcol = path_coords[2][1]
+        else:
+            nextnextrow = self.next_row
+            nextnextcol = self.next_col
+        self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
         msg = 'null'
         while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path_coords) > 1):
+            #time.sleep(1)
             print "in while loop"
             
             if rerouting == True:
@@ -119,15 +183,15 @@ class DriverThread(Thread):
                             (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                             self.next_row = path_coords[1][0]
                             self.next_col = path_coords[1][1]
-                elif (msg == 'STOP'):
-                    print("stopping!")
+                elif (msg[0] == 'S' and msg[3] == 'P'):
+                    print("in stop")
                     motors.setSpeeds(0,0)
                     time.sleep(3)
     
-                elif (msg == 'STPR'):
-                    print("Stop Rerouting!")
-                    motors.setSpeeds(0,0)
-                    time.sleep(3) #reroute
+                elif (msg[0] == 'S' and msg[3] =='R'):
+                    print("in stopr")
+                    #motors.setSpeeds(0,0)
+                    #time.sleep(3) #reroute
                     #reroute....
                     rerouting = True
                     reroute_coord = path_coords[1]; #potential collision at next (row, col)
@@ -154,10 +218,21 @@ class DriverThread(Thread):
                 self.curr_row = path_coords[1][0]
                 self.curr_col = path_coords[1][1]
                 self.curr_orient = path_dirs[0]
+                
+                if len(path_coords) > 3:
+                    nextnextrow = path_coords[3][0]
+                    nextnextrow = path_coords[3][1]
+                else:
+                    nextnextrow = self.next_row
+                    nextnextcol = self.next_col
+                #nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
+                #if nextDir == "Null":
+                #    nextDir = self.curr_orient
                 #update path coords and dirs
                 path_coords = path_coords[1:]
                 path_dirs = path_dirs[1:]
-                self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
+
+                self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
             else:
                 #move was unsuccessful
                 print "went off grid, mission failed"
@@ -204,7 +279,7 @@ class Node:
         self.thread_list.append(quit_thread)
         quit_thread.start()
         #
-        send_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id)  
+        send_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id, command_queue, avoid_list_queue)  
         self.thread_list.append(send_thread)
         send_thread.start()
         # Send CHK message to reveal yourself to the Marshall
@@ -238,54 +313,6 @@ class Node:
                 raise ex
         
         while True:
-            # Listen data
-            try:
-                data = self.sock.recv(4)
-                
-                if data != None and len(data) >= 4 and data[0:4] == "quit":
-                    break
-                # You received a command!
-                if data != None and len(data) == 3 and data[0] == str(self.node_id):
-                    print 'Received "%s"' % data
-                    dest_row = data[1]
-                    dest_col = data[2]
-                    command_queue.put((dest_row, dest_col))
-           
-                if data != None  and (data[0] == 'A' or data[0] == 'R'):
-                    print ("Received add or Remove from marshall!")
-                    print(data)
-                    new_buf = (data[0], data[1], data[2], data[3])
-                    avoid_list_queue.put(new_buf)
-
-                if data == "STOP":
-                    print "Received ",
-                    print data
-                    print("stopping!")
-                    motors.setSpeeds(0,0)
-                    time.sleep(3)
-                    #avoid_list_queue.put(data)
-
-                if data == "STPR":
-                    print "Received %s" % data
-                    print("Stop Rerouting!")
-                    motors.setSpeeds(0,0)
-                    time.sleep(3) #reroute
-                    #avoid_list_queue.put(data)
-
-            except socket.error as ex:
-                if str(ex) == "[Errno 35] Resource temporarily unavailable":
-                    time.sleep(0.01)
-                    continue
-                elif str(ex) == "[Errno 54] Connection reset by peer":
-                    print "Connection reset. Maybe the original client ended. Try again?"
-                    continue
-                elif str(ex) == "[Errno 9] Bad file descriptor":
-                    print "Client's dead.. ending this thread."
-                    break
-                elif str(ex) == "[Errno 32] Broken pipe":
-                    print "broken pipe"
-                    break
-                raise ex
             if not quit_queue.empty():
                 #print "putting qu in drive comms queue"
                 #drive_comms_queue.put("qu")
@@ -324,12 +351,12 @@ class Node:
 
 
 if "__main__" == __name__:
-    node_id = 1
+    node_id = 0
     curr_row = 0
-    curr_col = 3
-    curr_orient = 'W'
+    curr_col = 0
+    curr_orient = 'E'
     next_row = 0
-    next_col = 3
+    next_col = 0
     avoid_list = []
     node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list)
     node.run()
