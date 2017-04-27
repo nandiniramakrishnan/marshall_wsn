@@ -9,9 +9,9 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.190.194', 10000)
+server_address = ('128.237.165.203', 10000)
 STOPMSG = "STOP"
-STOPREROUTEMSG = "STOPR"
+STOPREROUTEMSG = "STPR"
 
 class QuitThread(Thread):
     def __init__(self, queue):
@@ -120,8 +120,13 @@ class DriverThread(Thread):
                             self.next_row = path_coords[1][0]
                             self.next_col = path_coords[1][1]
                 elif (msg == 'STOP'):
+                    print("stopping!")
+                    motors.setSpeeds(0,0)
                     time.sleep(3)
-                elif (msg == 'STOPR'):
+    
+                elif (msg == 'STPR'):
+                    print("Stop Rerouting!")
+                    motors.setSpeeds(0,0)
                     time.sleep(3) #reroute
                     #reroute....
                     rerouting = True
@@ -252,12 +257,14 @@ class Node:
                     new_buf = (data[0], data[1], data[2], data[3])
                     avoid_list_queue.put(new_buf)
 
-                if data == STOPMSG:
+                if data == "STOP":
                     print "Received ",
                     print data
+                    avoid_list_queue.put(data)
 
-                if data == STOPREROUTEMSG:
+                if data == "STPR":
                     print "Received %s" % data
+                    avoid_list_queue.put(data)
 
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
@@ -312,11 +319,11 @@ class Node:
 
 if "__main__" == __name__:
     node_id = 1
-    curr_row = 1
-    curr_col = 0
-    curr_orient = 'E'
-    next_row = 1
-    next_col = 0
+    curr_row = 0
+    curr_col = 3
+    curr_orient = 'W'
+    next_row = 0
+    next_col = 3
     avoid_list = []
     node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list)
     node.run()
