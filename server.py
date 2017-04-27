@@ -6,9 +6,9 @@ import time
 import Queue
 
 server_address = ('', 10000)
-node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0 }, 
-        '1':{'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0 }, 
-        '2':{'curr_row': 2, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 2, 'next_col': 0 } }
+node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'next_orient': 'E' }, 
+        '1':{'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0, 'next_orient': 'E' }, 
+        '2':{'curr_row': 2, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 2, 'next_col': 0, 'next_orient': 'E' } }
 
 class UserInterfaceThread(Thread):
     def __init__(self, queue):
@@ -92,6 +92,21 @@ class Server:
         self.client_list = []
         self.avoid_list = []
 
+    def check_collision(self, node_a, node_b):
+        if (node_a['next_row'] == node_b['next_row']) and abs(node_a['next_col'] - node_b['next_col']) <= 1 and ((node_a['next_orient'] == 'E' and node_b['next_orient'] == 'W') or (node_b['next_orient'] == 'E' and node_a['next_orient'] == 'W')):
+                return True
+        elif node_a['next_col'] == node_b['next_col'] \
+                and abs(node_a['next_row'] - node_b['next_row']) <= 1 \
+                and ((node_a['next_orient'] == 'N' and node_b['next_orient'] == 'S') \
+                    or (node_b['next_orient'] == 'N' and node_a['next_orient'] == 'S')):
+            return True
+            #elif abs(node_a['next_row'] - node_b['next_row'] <= 1 \
+                    #    and abs(node_a['next_col'] - node_b['next_col'] <= 1 \
+                    #   and ((node_a['next_orient'] == 'N' and node_b['next_orient'] == 'S') \
+                    #                or ((node_b['next_orient'] == 'N' and node_a['next_orient'] == 'S'))):
+                    #   return true
+        return False
+
     def run(self):
         # Server socket indicator
         server_up = False
@@ -159,19 +174,33 @@ class Server:
                     if node_properties['curr_row'] == node_properties['next_row'] and node_properties['curr_col'] == node_properties['next_col']:
                         avoid_buf = [ node_id, str(node_properties['curr_row']), str(node_properties['curr_col']) ]
                         avoid_msg = ''.join(avoid_buf)
-                        if avoid_msg not in self.avoid_list and len(self.client_list) == 2:
+                        if avoid_msg not in self.avoid_list and len(self.client_list) == 1:
                             self.avoid_list.append(avoid_msg)
                             for client in self.client_list:
                                 client.sendall("A"+avoid_msg)
-                if ((node_state['0']['next_row'] == node_state['1']['next_row']) and (node_state['0']['next_col'] == node_state['1']['next_col'])):
+                #if ((node_state['0']['next_row'] == node_state['1']['next_row']) and (node_state['0']['next_col'] == node_state['1']['next_col'])):
+                #    queue0.put('STPR')
+                #    queue1.put('STOP')
+                #    print "pushed to the queues"
+                #if ((node_state['0']['next_row'] == node_state['2']['next_row']) and (node_state['0']['next_col'] == node_state['2']['next_col'])):
+                #    queue0.put('STPR')
+                #    queue2.put('STOP')
+                #if ((node_state['1']['next_row'] == node_state['2']['next_row']) and (node_state['1']['next_col'] == node_state['2']['next_col'])):
+                #    queue2.put('STOP')                    
+                #    queue1.put('STPR')
+                
+                if self.check_collision(node_state['0'], node_state['1']) == True:
                     queue0.put('STPR')
                     queue1.put('STOP')
-                if ((node_state['0']['next_row'] == node_state['2']['next_row']) and (node_state['0']['next_col'] == node_state['2']['next_col'])):
+                if self.check_collision(node_state['0'], node_state['2']) == True:
                     queue0.put('STPR')
                     queue2.put('STOP')
-                if ((node_state['1']['next_row'] == node_state['2']['next_row']) and (node_state['1']['next_col'] == node_state['2']['next_col'])):
-                    queue2.put('STOP')                    
+                if self.check_collision(node_state['1'], node_state['2']) == True:
+                    queue2.put('STOP')
                     queue1.put('STPR')
+
+                    
+                
                 try:
                     self.sock.settimeout(0.5)
                     client = self.sock.accept()[0]
