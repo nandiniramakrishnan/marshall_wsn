@@ -9,7 +9,7 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.196.247', 10000)
+server_address = ('128.237.165.103', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STPR"
 
@@ -88,7 +88,7 @@ class MarshallCommsThread(Thread):
                     motors.setSpeeds(0,0)
                     new_buf = (data[0], data[1], data[2], data[3])
                     self.avoid_list_queue.put(new_buf)
-                    time.sleep(3)
+                    time.sleep(5)
 
                 if data != None and data == "STPR":
                     print "Received %s" % data
@@ -154,7 +154,7 @@ class DriverThread(Thread):
         else:
             nextnextrow = self.next_row
             nextnextcol = self.next_col
-        self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
+        self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
         msg = 'null'
         while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path_coords) > 1):
             #time.sleep(1)
