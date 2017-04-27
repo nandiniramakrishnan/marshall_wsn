@@ -60,7 +60,7 @@ class ClientThread(Thread):
             
             try:
                 data = self.client.recv(8)
-                if len(data) == 6:
+                if len(data) == 8:
                     node_state[self.node_id]['curr_row'] = data[1]
                     node_state[self.node_id]['curr_col'] = data[2]
                     node_state[self.node_id]['curr_orient'] = data[3]
@@ -96,16 +96,32 @@ class Server:
         self.avoid_list = []
 
     def check_collision(self, node_a, node_b):   
-        
+
+        curr_pos_a = [node_a['curr_row'], node_a['curr_col']]
+        curr_pos_b = [node_b['curr_row'], node_b['curr_col']]
         collision_pos_a = [node_a['next_row'], node_a['next_col']]
         collision_pos_next_a = [node_a['next_next_row'], node_a['next_next_col']]
         collision_pos_b = [node_b['next_row'], node_b['next_col']]
         collision_pos_next_b = [node_b['next_next_row'], node_b['next_next_col']]
 
-        if collision_pos_a == collision_pos_next_b or collision_pos_a == collision_pos_b or collition_pos_next_a==collision_pos_next_b or collision_pos_b == collision_pos_next_a:
-            return True
+#        if curr_pos_a == collision_pos_b:
+#            if collision_pos_a == collision_pos_next_b
+#            print "curr 0 == next 1"
+#            return collision_pos_a
+#        if collision_pos_a == curr_pos_b:
+#            print "curr 1 == next 0"
+#            return collision_pos_next_a
+        if collision_pos_a == collision_pos_next_b:
+            print "next 0 == next next 1"
+            return collision_pos_next_a
+        if collision_pos_b == collision_pos_next_a:
+            print "next 1 == next next 0"
+            return collision_pos_next_a
+        if collision_pos_a == collision_pos_b:
+            print "next 0 == next 1"
+            return collision_pos_a
         else:
-            return False
+            return None
 
     def run(self):
         # Server socket indicator
@@ -162,19 +178,22 @@ class Server:
                         queue1.put(command)
                     elif command[0] == '2':
                         queue2.put(command)
-                    remove_buf = [ command[0], str(node_state[command[0]]['curr_row']), str(node_state[command[0]]['curr_col']) ]
-                    remove_msg = ''.join(remove_buf)
+                    elif command[0] == 'A':
+                        queue0.put(command)
+                    if command[0] == '0' or command[0] == '1' or command[0] == '2':
+                        remove_buf = [ command[0], str(node_state[command[0]]['curr_row']), str(node_state[command[0]]['curr_col']) ]
+                        remove_msg = ''.join(remove_buf)
 
-                    if remove_msg in self.avoid_list:
-                        self.avoid_list.remove(remove_msg)
-                        for client in self.client_list:
-                            client.sendall("R"+remove_msg)
-                time.sleep(0.5)
+                        if remove_msg in self.avoid_list:
+                            self.avoid_list.remove(remove_msg)
+                            for client in self.client_list:
+                                client.sendall("R"+remove_msg)
+                        time.sleep(0.5)
                 for node_id, node_properties in node_state.iteritems():
                     if node_properties['curr_row'] == node_properties['next_row'] and node_properties['curr_col'] == node_properties['next_col']:
                         avoid_buf = [ node_id, str(node_properties['curr_row']), str(node_properties['curr_col']) ]
                         avoid_msg = ''.join(avoid_buf)
-                        if avoid_msg not in self.avoid_list and len(self.client_list) == 1:
+                        if avoid_msg not in self.avoid_list and len(self.client_list) == 2:
                             self.avoid_list.append(avoid_msg)
                             for client in self.client_list:
                                 client.sendall("A"+avoid_msg)
@@ -189,18 +208,27 @@ class Server:
                 #    queue2.put('STOP')                    
                 #    queue1.put('STPR')
                 
-                if self.check_collision(node_state['0'], node_state['1']) == True:
-                    queue0.put('STPR')
+                collision01 = self.check_collision(node_state['0'], node_state['1'])
+                collision02 = self.check_collision(node_state['0'], node_state['2'])
+                collision12 = self.check_collision(node_state['1'], node_state['2'])
+                if collision01 != None:
+                    avoid_buf = ['S', 'R', str(collision01[0]), str(collision01[1])]
+                    avoid_msg = ''.join(avoid_buf)
+                    queue0.put(avoid_msg)
                     queue1.put('STOP')
-                    print "collision detected!"
-                if self.check_collision(node_state['0'], node_state['2']) == True:
-                    queue0.put('STPR')
+                    print "collision detected! avoid_msg = %s" % avoid_msg
+                if collision02 != None:
+                    avoid_buf = ['S', 'R', str(collision02[0]), str(collision02[1])]
+                    avoid_msg = ''.join(avoid_buf)
+                    queue0.put(avoid_msg)
                     queue2.put('STOP')
-                if self.check_collision(node_state['1'], node_state['2']) == True:
+                    print "collision detected! avoid_msg = %s" % avoid_msg
+                if collision12 != None:
+                    avoid_buf = ['S', 'R', str(collision12[0]), str(collision12[1])]
+                    avoid_msg = ''.join(avoid_buf)
+                    queue1.put(avoid_msg)
                     queue2.put('STOP')
-                    queue1.put('STPR')
-
-                    
+                    print "collision detected! avoid_msg = %s" % avoid_msg
                 
                 try:
                     self.sock.settimeout(0.5)
