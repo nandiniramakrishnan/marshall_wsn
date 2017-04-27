@@ -11,7 +11,7 @@ import os
 # Server address
 server_address = ('128.237.165.203', 10000)
 STOPMSG = "STOP"
-STOPREROUTEMSG = "STOPR"
+STOPREROUTEMSG = "STPR"
 
 class QuitThread(Thread):
     def __init__(self, queue):
@@ -120,11 +120,12 @@ class DriverThread(Thread):
                             self.next_row = path_coords[1][0]
                             self.next_col = path_coords[1][1]
                 elif (msg == 'STOP'):
-                    print("stopping")
+                    print("stopping!")
                     motors.setSpeeds(0,0)
                     time.sleep(3)
+    
                 elif (msg == 'STPR'):
-                    print ("stopr")
+                    print("Stop Rerouting!")
                     motors.setSpeeds(0,0)
                     time.sleep(3) #reroute
                     #reroute....
@@ -134,7 +135,7 @@ class DriverThread(Thread):
                     (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                     self.next_row = path_coords[1][0]
                     self.next_col = path_coords[1][1]
-
+            
             print "avoid_list", 
             print self.avoid_list
             print "path coords = ",
@@ -259,9 +260,17 @@ class Node:
                 if data == "STOP":
                     print "Received ",
                     print data
+                    print("stopping!")
+                    motors.setSpeeds(0,0)
+                    time.sleep(3)
+                    #avoid_list_queue.put(data)
 
                 if data == "STPR":
                     print "Received %s" % data
+                    print("Stop Rerouting!")
+                    motors.setSpeeds(0,0)
+                    time.sleep(3) #reroute
+                    #avoid_list_queue.put(data)
 
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
