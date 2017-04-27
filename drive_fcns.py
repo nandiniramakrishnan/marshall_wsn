@@ -402,6 +402,8 @@ def getDir(curLoc, nextLoc):
         dir = "E"
     elif move[1] == -1:
         dir = "W"
+    else:
+        dir = "Null"
     return dir
 
 def plan_path(curr_row, curr_col, dest_row, dest_col, avoidList):

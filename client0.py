@@ -324,12 +324,12 @@ class Node:
 
 
 if "__main__" == __name__:
-    node_id = 0
+    node_id = 1
     curr_row = 0
-    curr_col = 0
-    curr_orient = 'E'
+    curr_col = 3
+    curr_orient = 'W'
     next_row = 0
-    next_col = 0
+    next_col = 3
     avoid_list = []
     node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list)
     node.run()
