@@ -119,7 +119,7 @@ class MarshallCommsThread(Thread):
 # Communication with MARSHALL_COMMS_THREAD will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 class DriverThread(Thread):
-    def __init__(self, node_id, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue):
+    def __init__(self, node_id, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, nextnextrow, nextnextcol):
         Thread.__init__(self)
         self.node_id = node_id
         self.curr_row = curr_row
@@ -134,6 +134,8 @@ class DriverThread(Thread):
         self.update_node_queue = update_node_queue
         self.avoid_list_queue = avoid_list_queue
         self.send_queue = send_queue
+        self.nextnextrow = nextnextrow
+        self.nextnextcol = nextnextcol
     
     def run(self):
         rerouting = False
@@ -149,19 +151,19 @@ class DriverThread(Thread):
         #if nextDir == "Null":
         #    nextDir = self.curr_orient
         if len(path_coords) > 2:
-            nextnextrow = path_coords[2][0]
-            nextnextcol = path_coords[2][1]
+            self.nextnextrow = path_coords[2][0]
+            self.nextnextcol = path_coords[2][1]
         else:
-            nextnextrow = self.next_row
-            nextnextcol = self.next_col
-        self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
+            self.nextnextrow = self.next_row
+            self.nextnextcol = self.next_col
+        self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, self.nextnextrow, self.nextnextcol))
         msg = 'null'
         while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path_coords) > 1):
             #time.sleep(1)
             print "in while loop"
             
             if rerouting == True:
-                self.avoid_list.remove(reroute_coord)
+                self.avoid_list.remove(reroute_coords)
                 rerouting = False
 
             while not self.avoid_list_queue.empty():
@@ -203,8 +205,8 @@ class DriverThread(Thread):
                     #reroute....
                     rerouting = True
                     #reroute_coord = path_coords[1]; #potential collision at next (row, col)
-                    reroute_coords = (msg[2], msg[3])
-                    self.avoid_list.append(reroute_coord)
+                    reroute_coords = (int(msg[2]), int(msg[3]))
+                    self.avoid_list.append(reroute_coords)
                     (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                     self.next_row = path_coords[1][0]
                     self.next_col = path_coords[1][1]
@@ -229,11 +231,11 @@ class DriverThread(Thread):
                 self.curr_orient = path_dirs[0]
                 
                 if len(path_coords) > 3:
-                    nextnextrow = path_coords[3][0]
-                    nextnextrow = path_coords[3][1]
+                    self.nextnextrow = path_coords[3][0]
+                    self.nextnextrow = path_coords[3][1]
                 else:
-                    nextnextrow = self.next_row
-                    nextnextcol = self.next_col
+                    self.nextnextrow = self.next_row
+                    self.nextnextcol = self.next_col
                 #nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
                 #if nextDir == "Null":
                 #    nextDir = self.curr_orient
@@ -241,8 +243,8 @@ class DriverThread(Thread):
                 path_coords = path_coords[1:]
                 path_dirs = path_dirs[1:]
 
-                self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
-                self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
+                #self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
+                self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, self.nextnextrow, self.nextnextcol))
             else:
                 #move was unsuccessful
                 print "went off grid, mission failed"
