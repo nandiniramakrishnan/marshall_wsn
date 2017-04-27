@@ -45,7 +45,8 @@ class MarshallCommsThread(Thread):
                 curr_orient = new_pos[2]
                 next_row = new_pos[3]
                 next_col = new_pos[4]
-                new_buf = [ str(self.node_id), str(curr_row), str(curr_col), str(curr_orient), str(next_row), str(next_col) ]
+                next_orient = new_pos[5]
+                new_buf = [ str(self.node_id), str(curr_row), str(curr_col), str(curr_orient), str(next_row), str(next_col), str(next_orient)]
                 new_msg = ''.join(new_buf)
                 self.sock.sendall(new_msg)
                 
@@ -83,9 +84,13 @@ class DriverThread(Thread):
         print path_dirs
         self.next_row = path_coords[1][0]
         self.next_col = path_coords[1][1]
-        self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
+        nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
+        if nextDir == "Null":
+            nextDir = self.curr_orient
+        self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextDir))
         msg = 'null'
         while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path_coords) > 1):
+            time.sleep(1)
             print "in while loop"
             
             if rerouting == True:
@@ -154,10 +159,14 @@ class DriverThread(Thread):
                 self.curr_row = path_coords[1][0]
                 self.curr_col = path_coords[1][1]
                 self.curr_orient = path_dirs[0]
+                nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
+                if nextDir == "Null":
+                    nextDir = self.curr_orient
                 #update path coords and dirs
                 path_coords = path_coords[1:]
                 path_dirs = path_dirs[1:]
-                self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col))
+
+                self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextDir))
             else:
                 #move was unsuccessful
                 print "went off grid, mission failed"
@@ -257,14 +266,14 @@ class Node:
                     new_buf = (data[0], data[1], data[2], data[3])
                     avoid_list_queue.put(new_buf)
 
-                if data == "STOP":
+                if data != None and data == "STOP":
                     print "Received ",
                     print data
                     print("stopping!")
                     motors.setSpeeds(0,0)
                     time.sleep(3)
 
-                if data == "STPR":
+                if data != None and data == "STPR":
                     print "Received %s" % data
                     print("Stop Rerouting!")
                     motors.setSpeeds(0,0)
