@@ -28,16 +28,26 @@ class QuitThread(Thread):
         return
 
 class SendThread(Thread):
-    def __init__(self, sock, send_queue):
+    def __init__(self, node_id, sock, send_queue):
         Thread.__init__(self)
         self.sock = sock
+        self.node_id = node_id
         self.send_queue = send_queue
 
     def run(self):
         while True:
             if not self.send_queue.empty():
-                position = self.send_queue.get()
-                self.sock.sendall(position)
+                new_pos = self.send_queue.get()
+                curr_row = new_pos[0]
+                curr_col = new_pos[1]
+                curr_orient = new_pos[2]
+                next_row = new_pos[3]
+                next_col = new_pos[4]
+                nextnextrow = new_pos[5]
+                nextnextcol = new_pos[6]
+                new_buf = [ str(self.node_id), str(curr_row), str(curr_col), str(curr_orient), str(next_row), str(next_col), str(nextnextrow), str(nextnextcol)]
+                new_msg = ''.join(new_buf)
+                self.sock.sendall(new_msg)
 
 # This class sends messages to the Marshall while driving
 class MarshallCommsThread(Thread):
@@ -51,19 +61,6 @@ class MarshallCommsThread(Thread):
 
     def run(self):
         while True:
-            if not self.drive_comms_queue.empty():
-                print ("send")
-                new_pos = self.drive_comms_queue.get()
-                curr_row = new_pos[0]
-                curr_col = new_pos[1]
-                curr_orient = new_pos[2]
-                next_row = new_pos[3]
-                next_col = new_pos[4]
-                nextnextrow = new_pos[5]
-                nextnextcol = new_pos[6]
-                new_buf = [ str(self.node_id), str(curr_row), str(curr_col), str(curr_orient), str(next_row), str(next_col), str(nextnextrow), str(nextnextcol)]
-                new_msg = ''.join(new_buf)
-                self.sock.sendall(new_msg)
                 
             # Listen data
             try:
@@ -326,7 +323,7 @@ class Node:
         marshall_comms_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id, command_queue, avoid_list_queue)  
         self.thread_list.append(marshall_comms_thread)
         marshall_comms_thread.start()
-        send_thread = SendThread(self.sock, send_queue)
+        send_thread = SendThread(self.node_id, self.sock, send_queue)
         self.thread_list.append(send_thread)
         send_thread.start()
 
