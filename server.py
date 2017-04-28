@@ -83,6 +83,7 @@ class ClientThread(Thread):
         self.client.close()
         return
 
+
 # Multithreaded TCP Server
 class Server:
 
@@ -93,6 +94,33 @@ class Server:
         self.avoid_list = []
 
     def check_collision(self, node_a, node_b):
+        collision_pos_a = [node_a['next_row'], node_a['next_col']]
+        if node_a['next_orient'] == 'N':
+            collision_pos_a[0] -= 1
+        elif node_a['next_orient'] == 'S':
+            collision_pos_a[0] += 1
+        elif node_a['next_orient'] == 'E':
+            collision_pos_a[1] += 1
+        elif node_a['next_orient'] == 'W':
+            collision_pos_a[1] -= 1
+
+
+        collision_pos_b = [node_b['next_row'], node_b['next_col']]
+        if node_b['next_orient'] == 'N':
+            collision_pos_b[0] -= 1
+        elif node_b['next_orient'] == 'S':
+            collision_pos_b[0] += 1
+        elif node_b['next_orient'] == 'E':
+            collision_pos_b[1] += 1
+        elif node_b['next_orient'] == 'W':
+            collision_pos_b[1] -= 1
+
+        if collision_pos_a == collision_pos_b:
+            return True
+        else:
+            return False
+
+        '''
         if (node_a['next_row'] == node_b['next_row']) and abs(node_a['next_col'] - node_b['next_col']) <= 1 and ((node_a['next_orient'] == 'E' and node_b['next_orient'] == 'W') or (node_b['next_orient'] == 'E' and node_a['next_orient'] == 'W')):
                 return True
         elif node_a['next_col'] == node_b['next_col'] \
@@ -100,12 +128,14 @@ class Server:
                 and ((node_a['next_orient'] == 'N' and node_b['next_orient'] == 'S') \
                     or (node_b['next_orient'] == 'N' and node_a['next_orient'] == 'S')):
             return True
-            #elif abs(node_a['next_row'] - node_b['next_row'] <= 1 \
+        '''
+   
+        #elif abs(node_a['next_row'] - node_b['next_row'] <= 1 \
                     #    and abs(node_a['next_col'] - node_b['next_col'] <= 1 \
                     #   and ((node_a['next_orient'] == 'N' and node_b['next_orient'] == 'S') \
                     #                or ((node_b['next_orient'] == 'N' and node_a['next_orient'] == 'S'))):
                     #   return true
-        return False
+        #return False
 
     def run(self):
         # Server socket indicator
