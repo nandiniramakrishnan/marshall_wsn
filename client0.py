@@ -40,57 +40,8 @@ class MarshallCommsThread(Thread):
 
     def run(self):
         while True:
-            # Listen data
-            try:
-                data = self.sock.recv(4)
-                
-                if data != None and len(data) >= 4 and data[0:4] == "quit":
-                    break
-                # You received a command!
-                if data != None and len(data) == 3 and data[0] == str(self.node_id):
-                    print 'Received "%s"' % data
-                    dest_row = data[1]
-                    dest_col = data[2]
-                    command_queue.put((dest_row, dest_col))
-           
-                if data != None  and (data[0] == 'A' or data[0] == 'R'):
-                    print ("Received add or Remove from marshall!")
-                    print(data)
-                    new_buf = (data[0], data[1], data[2], data[3])
-                    avoid_list_queue.put(new_buf)
-
-                if data != None and data == "STOP":
-                    print "Received ",
-                    print data
-                    print("stopping!")
-                    motors.setSpeeds(0,0)
-                    new_buf = (data[0], data[1], data[2], data[3])
-                    avoid_list_queue.put(new_buf)
-                    time.sleep(3)
-
-                if data != None and data == "STPR":
-                    print "Received %s" % data
-                    print("Stop Rerouting!")
-                    motors.setSpeeds(0,0)
-                    new_buf = (data[0], data[1], data[2], data[3])
-                    avoid_list_queue.put(new_buf)
-                    time.sleep(3)
-
-            except socket.error as ex:
-                if str(ex) == "[Errno 35] Resource temporarily unavailable":
-                    time.sleep(0.01)
-                    continue
-                elif str(ex) == "[Errno 54] Connection reset by peer":
-                    print "Connection reset. Maybe the original client ended. Try again?"
-                    continue
-                elif str(ex) == "[Errno 9] Bad file descriptor":
-                    print "Client's dead.. ending this thread."
-                    break
-                elif str(ex) == "[Errno 32] Broken pipe":
-                    print "broken pipe"
-                    break
-                raise ex
             if not self.drive_comms_queue.empty():
+                print ("send")
                 new_pos = self.drive_comms_queue.get()
                 curr_row = new_pos[0]
                 curr_col = new_pos[1]
@@ -103,6 +54,54 @@ class MarshallCommsThread(Thread):
                 new_msg = ''.join(new_buf)
                 self.sock.sendall(new_msg)
                 
+            # Listen data
+            try:
+                data = self.sock.recv(4)
+                
+                if data != None and len(data) >= 4 and data[0:4] == "quit":
+                    break
+                # You received a command!
+                if data != None and len(data) == 3 and data[0] == str(self.node_id):
+                    print 'Received "%s"' % data
+                    dest_row = data[1]
+                    dest_col = data[2]
+                    self.command_queue.put((dest_row, dest_col))
+           
+                if data != None  and (data[0] == 'A' or data[0] == 'R'):
+                    print ("Received add or Remove from marshall!")
+                    print(data)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    self.avoid_list_queue.put(new_buf)
+
+                if data != None and data == "STOP":
+                    print "Received ",
+                    print data
+                    print("stopping!")
+                    motors.setSpeeds(0,0)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    self.avoid_list_queue.put(new_buf)
+                    time.sleep(3)
+
+                if data != None and data == "STPR":
+                    print "Received %s" % data
+                    print("Stop Rerouting!")
+                    motors.setSpeeds(0,0)
+                    new_buf = (data[0], data[1], data[2], data[3])
+                    self.avoid_list_queue.put(new_buf)
+                    time.sleep(3)
+
+            except socket.error as ex:
+                if str(ex) == "[Errno 35] Resource temporarily unavailable":
+                    time.sleep(0.01)
+                    continue
+                elif str(ex) == "[Errno 54] Connection reset by peer":
+                    print "Connection reset. Maybe the original client ended. Try again?"
+                    continue
+                elif str(ex) == "[Errno 32] Broken pipe":
+                    print "broken pipe"
+                    break
+                raise ex
+
         print "closing sock in mct" 
         self.sock.close()
         return
@@ -279,9 +278,6 @@ class Node:
         self.thread_list.append(quit_thread)
         quit_thread.start()
         #
-        send_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id, command_queue, avoid_list_queue)  
-        self.thread_list.append(send_thread)
-        send_thread.start()
         # Send CHK message to reveal yourself to the Marshall
         print 'Sending "%s"' % chk_msg
         self.sock.sendall(chk_msg)
@@ -312,6 +308,11 @@ class Node:
                     break
                 raise ex
         
+        
+        send_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id, command_queue, avoid_list_queue)  
+        self.thread_list.append(send_thread)
+        send_thread.start()
+
         while True:
             if not quit_queue.empty():
                 #print "putting qu in drive comms queue"
