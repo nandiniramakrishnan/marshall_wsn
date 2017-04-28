@@ -27,6 +27,17 @@ class QuitThread(Thread):
                 break
         return
 
+class SendThread(Thread):
+    def __init__(self, sock, send_queue):
+        Thread.__init__(self)
+        self.sock = sock
+        self.send_queue = send_queue
+
+    def run(self):
+        while True:
+            if not self.send_queue.empty():
+                position = self.send_queue.get()
+                self.sock.sendall(position)
 
 # This class sends messages to the Marshall while driving
 class MarshallCommsThread(Thread):
@@ -111,7 +122,7 @@ class MarshallCommsThread(Thread):
 # Communication with MARSHALL_COMMS_THREAD will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 class DriverThread(Thread):
-    def __init__(self, node_id, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue):
+    def __init__(self, node_id, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue):
         Thread.__init__(self)
         self.node_id = node_id
         self.curr_row = curr_row
@@ -125,6 +136,7 @@ class DriverThread(Thread):
         self.drive_comms_queue = drive_comms_queue
         self.update_node_queue = update_node_queue
         self.avoid_list_queue = avoid_list_queue
+        self.send_queue = send_queue
     
     def run(self):
         rerouting = False
@@ -232,6 +244,7 @@ class DriverThread(Thread):
                 path_dirs = path_dirs[1:]
 
                 self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
+                self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
             else:
                 #move was unsuccessful
                 print "went off grid, mission failed"
@@ -273,6 +286,7 @@ class Node:
         quit_queue = Queue.Queue()
         update_node_queue = Queue.Queue()
         avoid_list_queue = Queue.Queue()
+        send_queue = Queue.Queue()
         #
         quit_thread = QuitThread(quit_queue)
         self.thread_list.append(quit_thread)
@@ -309,7 +323,10 @@ class Node:
                 raise ex
         
         
-        send_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id, command_queue, avoid_list_queue)  
+        marshall_comms_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id, command_queue, avoid_list_queue)  
+        self.thread_list.append(marshall_comms_thread)
+        marshall_comms_thread.start()
+        send_thread = SendThread(self.sock, send_queue)
         self.thread_list.append(send_thread)
         send_thread.start()
 
@@ -322,7 +339,7 @@ class Node:
             if self.drivingState == False and not command_queue.empty():
                 print "gonna start driving!"
                 (dest_row, dest_col) = command_queue.get()
-                drivingThread = DriverThread(self.node_id, self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue)
+                drivingThread = DriverThread(self.node_id, self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue)
                 self.drivingState = True
                 self.thread_list.append(drivingThread)
                 drivingThread.start()
