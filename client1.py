@@ -9,7 +9,7 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.165.203', 10000)
+server_address = ('128.237.196.247', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STPR"
 
@@ -84,13 +84,19 @@ class DriverThread(Thread):
         print path_dirs
         self.next_row = path_coords[1][0]
         self.next_col = path_coords[1][1]
-        nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
-        if nextDir == "Null":
-            nextDir = self.curr_orient
-        self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextDir))
+        #nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
+        #if nextDir == "Null":
+        #    nextDir = self.curr_orient
+        if len(path_coords) > 2:
+            nextnextrow = path_coords[2][0]
+            nextnextcol = path_coorsd[2][1]
+        else:
+            nextnextrow = self.next_row
+            nextnextcol = self.next_col
+        self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
         msg = 'null'
         while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path_coords) > 1):
-            time.sleep(1)
+            #time.sleep(1)
             print "in while loop"
             
             if rerouting == True:
@@ -159,14 +165,21 @@ class DriverThread(Thread):
                 self.curr_row = path_coords[1][0]
                 self.curr_col = path_coords[1][1]
                 self.curr_orient = path_dirs[0]
-                nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
-                if nextDir == "Null":
-                    nextDir = self.curr_orient
+                
+                if len(path_coords) > 3:
+                    nextnextrow = path_coords[3][0]
+                    nextnextrow = path_coords[3][1]
+                else:
+                    nextnextrow = self.next_row
+                    nextnextcol = self.next_col
+                #nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
+                #if nextDir == "Null":
+                #    nextDir = self.curr_orient
                 #update path coords and dirs
                 path_coords = path_coords[1:]
                 path_dirs = path_dirs[1:]
 
-                self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextDir))
+                self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
             else:
                 #move was unsuccessful
                 print "went off grid, mission failed"
