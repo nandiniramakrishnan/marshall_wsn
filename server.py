@@ -6,9 +6,9 @@ import time
 import Queue
 
 server_address = ('', 10000)
-node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'next_orient': 'E' }, 
-        '1':{'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0, 'next_orient': 'E' }, 
-        '2':{'curr_row': 2, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 2, 'next_col': 0, 'next_orient': 'E' } }
+node_state = {'0':{'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'next_next_row': 0, 'next_next_col': 0 }, 
+        '1':{'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0, 'next_next_row': 1, 'next_next_col': 0 }, 
+        '2':{'curr_row': 2, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 2, 'next_col': 0, 'next_next_row': 2, 'next_next_col': 0 } }
 
 class UserInterfaceThread(Thread):
     def __init__(self, queue):
@@ -59,13 +59,15 @@ class ClientThread(Thread):
                 self.client.sendall(command)
             
             try:
-                data = self.client.recv(6)
+                data = self.client.recv(8)
                 if len(data) == 6:
                     node_state[self.node_id]['curr_row'] = data[1]
                     node_state[self.node_id]['curr_col'] = data[2]
                     node_state[self.node_id]['curr_orient'] = data[3]
                     node_state[self.node_id]['next_row'] = data[4]
                     node_state[self.node_id]['next_col'] = data[5]
+                    node_state[self.node_id]['next_next_row'] = data[6]
+                    node_state[self.node_id]['next_next_col'] = data[7]
                     print data
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
@@ -93,49 +95,17 @@ class Server:
         self.client_list = []
         self.avoid_list = []
 
-    def check_collision(self, node_a, node_b):
+    def check_collision(self, node_a, node_b):   
+        
         collision_pos_a = [node_a['next_row'], node_a['next_col']]
-        if node_a['next_orient'] == 'N':
-            collision_pos_a[0] -= 1
-        elif node_a['next_orient'] == 'S':
-            collision_pos_a[0] += 1
-        elif node_a['next_orient'] == 'E':
-            collision_pos_a[1] += 1
-        elif node_a['next_orient'] == 'W':
-            collision_pos_a[1] -= 1
-
-
+        collision_pos_next_a = [node_a['next_next_row'], node_a['next_next_col']]
         collision_pos_b = [node_b['next_row'], node_b['next_col']]
-        if node_b['next_orient'] == 'N':
-            collision_pos_b[0] -= 1
-        elif node_b['next_orient'] == 'S':
-            collision_pos_b[0] += 1
-        elif node_b['next_orient'] == 'E':
-            collision_pos_b[1] += 1
-        elif node_b['next_orient'] == 'W':
-            collision_pos_b[1] -= 1
+        collision_pos_next_b = [node_b['next_next_row'], node_b['next_next_col']]
 
-        if collision_pos_a == collision_pos_b:
+        if collision_pos_a == collision_pos_next_b or collision_pos_b == collision_pos_next_a:
             return True
         else:
             return False
-
-        '''
-        if (node_a['next_row'] == node_b['next_row']) and abs(node_a['next_col'] - node_b['next_col']) <= 1 and ((node_a['next_orient'] == 'E' and node_b['next_orient'] == 'W') or (node_b['next_orient'] == 'E' and node_a['next_orient'] == 'W')):
-                return True
-        elif node_a['next_col'] == node_b['next_col'] \
-                and abs(node_a['next_row'] - node_b['next_row']) <= 1 \
-                and ((node_a['next_orient'] == 'N' and node_b['next_orient'] == 'S') \
-                    or (node_b['next_orient'] == 'N' and node_a['next_orient'] == 'S')):
-            return True
-        '''
-   
-        #elif abs(node_a['next_row'] - node_b['next_row'] <= 1 \
-                    #    and abs(node_a['next_col'] - node_b['next_col'] <= 1 \
-                    #   and ((node_a['next_orient'] == 'N' and node_b['next_orient'] == 'S') \
-                    #                or ((node_b['next_orient'] == 'N' and node_a['next_orient'] == 'S'))):
-                    #   return true
-        #return False
 
     def run(self):
         # Server socket indicator
@@ -222,6 +192,7 @@ class Server:
                 if self.check_collision(node_state['0'], node_state['1']) == True:
                     queue0.put('STPR')
                     queue1.put('STOP')
+                    print "collision detected!"
                 if self.check_collision(node_state['0'], node_state['2']) == True:
                     queue0.put('STPR')
                     queue2.put('STOP')
