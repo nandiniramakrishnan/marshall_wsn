@@ -254,6 +254,8 @@ class DriverThread(Thread):
         self.curr_col = path_coords[0][1]
         self.next_row = path_coords[0][0]
         self.next_col = path_coords[0][1]
+        self.nextnextrow = path_coords[0][0]
+        self.nextnextcol = path_coords[0][1]
         self.update_node_queue.put((self.curr_row, self.curr_col, self.curr_orient))
         return
        
