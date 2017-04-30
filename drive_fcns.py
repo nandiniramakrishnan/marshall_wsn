@@ -292,7 +292,7 @@ def turn(direction):
         motors.setSpeeds(speed, -speed)
     else:
         return
-    time.sleep(0.9)
+    time.sleep(0.7)
     color = get_color()
     #print(color)
     #print("off first line")
