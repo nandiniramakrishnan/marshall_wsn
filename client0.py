@@ -86,11 +86,11 @@ class MarshallCommsThread(Thread):
                     print data
                     print("stopping!")
                     motors.setSpeeds(0,0)
-                    new_buf = (data[0], data[1], data[2], data[3])
-                    self.avoid_list_queue.put(new_buf)
+                    #new_buf = (data[0], data[1], data[2], data[3])
+                    #self.avoid_list_queue.put(new_buf)
                     time.sleep(5)
 
-                if data != None and data == "STPR":
+                if data != None and data[0] == "S" and data[1] == "R":
                     print "Received %s" % data
                     print("Stop Rerouting!")
                     motors.setSpeeds(0,0)
@@ -161,7 +161,7 @@ class DriverThread(Thread):
             print "in while loop"
             
             if rerouting == True:
-                self.avoid_list.remove(reroute_coord)
+                self.avoid_list.remove(reroute_coords)
                 rerouting = False
 
             while not self.avoid_list_queue.empty():
@@ -196,14 +196,15 @@ class DriverThread(Thread):
                     motors.setSpeeds(0,0)
                     time.sleep(3)
     
-                elif (msg[0] == 'S' and msg[3] =='R'):
+                elif (msg[0] == 'S' and msg[1] =='R'):
                     print("in stopr")
                     #motors.setSpeeds(0,0)
                     #time.sleep(3) #reroute
                     #reroute....
                     rerouting = True
-                    reroute_coord = path_coords[1]; #potential collision at next (row, col)
-                    self.avoid_list.append(reroute_coord)
+                    #reroute_coord = path_coords[1]; #potential collision at next (row, col)
+                    reroute_coords = (int(msg[2]), int(msg[3]))
+                    self.avoid_list.append(reroute_coords)
                     (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                     self.next_row = path_coords[1][0]
                     self.next_col = path_coords[1][1]
