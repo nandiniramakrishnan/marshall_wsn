@@ -119,7 +119,7 @@ class MarshallCommsThread(Thread):
 # Communication with MARSHALL_COMMS_THREAD will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 class DriverThread(Thread):
-    def __init__(self, node_id, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue):
+    def __init__(self, node_id, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, nextnextrow, nextnextcol):
         Thread.__init__(self)
         self.node_id = node_id
         self.curr_row = curr_row
@@ -134,6 +134,8 @@ class DriverThread(Thread):
         self.update_node_queue = update_node_queue
         self.avoid_list_queue = avoid_list_queue
         self.send_queue = send_queue
+        self.nextnextrow = nextnextrow
+        self.nextnextcol = nextnextcol
     
     def run(self):
         rerouting = False
@@ -149,12 +151,12 @@ class DriverThread(Thread):
         #if nextDir == "Null":
         #    nextDir = self.curr_orient
         if len(path_coords) > 2:
-            nextnextrow = path_coords[2][0]
-            nextnextcol = path_coords[2][1]
+            self.nextnextrow = path_coords[2][0]
+            self.nextnextcol = path_coords[2][1]
         else:
-            nextnextrow = self.next_row
-            nextnextcol = self.next_col
-        self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
+            self.nextnextrow = self.next_row
+            self.nextnextcol = self.next_col
+        self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, self.nextnextrow, self.nextnextcol))
         msg = 'null'
         while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path_coords) > 1):
             #time.sleep(1)
@@ -229,11 +231,11 @@ class DriverThread(Thread):
                 self.curr_orient = path_dirs[0]
                 
                 if len(path_coords) > 3:
-                    nextnextrow = path_coords[3][0]
-                    nextnextrow = path_coords[3][1]
+                    self.nextnextrow = path_coords[3][0]
+                    self.nextnextcol = path_coords[3][1]
                 else:
-                    nextnextrow = self.next_row
-                    nextnextcol = self.next_col
+                    self.nextnextrow = self.next_row
+                    self.nextnextcol = self.next_col
                 #nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
                 #if nextDir == "Null":
                 #    nextDir = self.curr_orient
@@ -241,8 +243,8 @@ class DriverThread(Thread):
                 path_coords = path_coords[1:]
                 path_dirs = path_dirs[1:]
 
-                self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
-                self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
+                #self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
+                self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, self.nextnextrow, self.nextnextcol))
             else:
                 #move was unsuccessful
                 print "went off grid, mission failed"
@@ -252,6 +254,8 @@ class DriverThread(Thread):
         self.curr_col = path_coords[0][1]
         self.next_row = path_coords[0][0]
         self.next_col = path_coords[0][1]
+        self.nextnextrow = path_coords[0][0]
+        self.nextnextcol = path_coords[0][1]
         self.update_node_queue.put((self.curr_row, self.curr_col, self.curr_orient))
         return
        
@@ -267,6 +271,8 @@ class Node:
         self.thread_list = []
         self.next_row = next_row
         self.next_col = next_col
+        self.nextnextrow = next_row
+        self.nextnextcol = next_col
         self.avoid_list = avoid_list
 
     def run(self):
@@ -337,7 +343,7 @@ class Node:
             if self.drivingState == False and not command_queue.empty():
                 print "gonna start driving!"
                 (dest_row, dest_col) = command_queue.get()
-                drivingThread = DriverThread(self.node_id, self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue)
+                drivingThread = DriverThread(self.node_id, self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, self.nextnextrow, self.nextnextcol)
                 self.drivingState = True
                 self.thread_list.append(drivingThread)
                 drivingThread.start()
