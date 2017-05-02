@@ -28,9 +28,9 @@ pin6 = 26 #13
 
 # Three speed constants for different purposes
 v3 = MAX_SPEED # = 480
-v2 = 50 #380
-v1 = 25 #150
-speed = 50
+v2 = 56 #380
+v1 = 28 #150
+speed = 56
 
 #define gray and black thresholds
 #color_thresh = 0.00035
@@ -67,7 +67,7 @@ def line_follow(curr_orient, direction):
     color = []
 
     motors.setSpeeds(v2, v2)
-    time.sleep(0.4)
+    time.sleep(0.2)
 
 #    print("in line follow")
 
@@ -196,58 +196,7 @@ def read_sensor(pin):
     #    (moving, ingap, black_cntr))
     #return (L, M, R)
 
-"""# --------------------------------------------------------
-# Drive some distance, time to sleep is calculated from
-# given value (val) and result of calibration (cal).
-def drive(val):
 
-    sec = val * cal/500
-    sleep (sec)
-
-# --------------------------------------------------------
-# Calibrate: Drive two 180 degree turns in both directions
-# and measure time needed.
-def calibrate():
-
-    tl1 = turnCalib("left")
-    tl2 = turnCalib("left")
-    tr1 = turnCalib("right")
-    tr2 = turnCalib("right")
-    cal = (tl1 + tl2 + tr1 + tr2) / 4
-    print ("CAL:", tl1, tl2, tr1, tr2, "=>", cal)
-
-    return cal
-
-# --------------------------------------------------------
-# Turn left or right: at first leave the black line just
-# under the sensors (if there is a line), then continue
-# turning until the black line is reached again.
-def turnCalib(dir):
-
-    if dir == "left":
-        motors.setSpeeds(-v3, v3)
-    else:
-        motors.setSpeeds(v3, -v3)
-
-    # Start with a short turn to ensure that we will
-    # leave the line under (or next to) the sensors.
-    time.sleep (100 * delay)
-
-    # Count loops while turning (for calibration)
-    turn = 100
-
-    # Turn until line is lost
-    while read_sensors("middle") == 1:
-        turn += 1
-        time.sleep(delay)
-
-    # Turn until line is reached again
-    while read_sensors("middle") == 0:
-        turn += 1
-        time.sleep(delay)
-
-    return turn
-"""
 def get_color():
     color = []
     #read sensor values
@@ -292,18 +241,18 @@ def turn(direction):
         motors.setSpeeds(speed, -speed)
     else:
         return
-    time.sleep(0.7)
+    time.sleep(0.6)
     color = get_color()
     #print(color)
     #print("off first line")
     while (color[2:4] != [2, 2]) and (color[2:4] != [0, 2]) and (color[2:4] != [2, 0]):
         
-	if direction == "right":
-	    motors.setSpeeds(speed, -speed)
-	elif direction == "left":
-	    motors.setSpeeds(-speed, speed)
-        time.sleep(0.1)
-        color = get_color()
+	    if direction == "right":
+	        motors.setSpeeds(speed, -speed)
+	    elif direction == "left":
+	        motors.setSpeeds(-speed, speed)
+            time.sleep(0.1)
+            color = get_color()
         #print(color)
 
     motors.setSpeeds(0,0)
@@ -328,22 +277,6 @@ def path_plan(curr_row, curr_col, new_row, new_col):
 	path['W'] = abs(diff_col)
     return path
 
-'''
-#new plan_path code
-def plan_path(curr_row, curr_col, new_row, new_col):
-    path = []
-    diff_row = new_row - curr_row
-    diff_col = new_col - curr_col
-    if (diff_col > 0): #drive east
-	    path.append(('E', abs(diff_col)))
-    elif (diff_col < 0): #drive west
-	    path.append(('W', abs(diff_col)))
-    if (diff_row > 0): #drive South
-	    path.append(('S', abs(diff_row)))
-    elif (diff_row < 0): #drive north
-	    path.append(('N', abs(diff_row)))
-    return path
-'''
 
 
 gridSize = [4,6]
