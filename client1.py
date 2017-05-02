@@ -208,17 +208,18 @@ class DriverThread(Thread):
                 elif (msg[0] == 'S' and msg[1] == 'T'):
                     print("                 in stop")
                     motors.setSpeeds(0,0)
-                    time.sleep(3)
+                    time.sleep(2)
     
                 elif (msg[0] == 'S' and msg[1] =='R'):
                     print("in stopr")
                     #motors.setSpeeds(0,0)
                     #time.sleep(3) #reroute
                     #reroute....
-                    rerouting = True
                     #reroute_coord = path_coords[1]; #potential collision at next (row, col)
                     reroute_coords = (int(msg[2]), int(msg[3]))
-                    self.avoid_list.append(reroute_coords)
+                    if ((int(msg[2]), int(msg[3])) not in self.avoid_list):
+                        self.avoid_list.append(reroute_coords)
+                        rerouting = True
                     (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
                     self.next_row = path_coords[1][0]
                     self.next_col = path_coords[1][1]
@@ -392,11 +393,11 @@ class Node:
 
 if "__main__" == __name__:
     node_id = 1
-    curr_row = 0
-    curr_col = 5
-    curr_orient = 'W'
-    next_row = 0
-    next_col = 5
+    curr_row = 2
+    curr_col = 0
+    curr_orient = 'E'
+    next_row = 2
+    next_col = 0
     avoid_list = []
     node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list)
     node.run()
