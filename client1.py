@@ -185,8 +185,8 @@ class DriverThread(Thread):
                                 self.nextnextrow = path_coords[2][0]
                                 self.nextnextcol = path_coords[2][1]
                             else:
-                                self.nextnextrow = self.nextrow
-                                self.nextnextcol = self.nextcol
+                                self.nextnextrow = self.next_row
+                                self.nextnextcol = self.next_col
                 elif (msg[0] == 'R'):
                     if (msg[1] != str(self.node_id) or msg[1] == 'D'):
                         if (self.avoid_list == [] or ((int(msg[2]), int(msg[3])) not in avoid_list)):
@@ -203,8 +203,8 @@ class DriverThread(Thread):
                                 self.nextnextrow = path_coords[2][0]
                                 self.nextnextcol = path_coords[2][1]
                             else:
-                                self.nextnextrow = self.nextrow
-                                self.nextnextcol = self.nextcol
+                                self.nextnextrow = self.next_row
+                                self.nextnextcol = self.next_col
                 elif (msg[0] == 'S' and msg[1] == 'T'):
                     print("                 in stop")
                     motors.setSpeeds(0,0)
@@ -227,8 +227,8 @@ class DriverThread(Thread):
                         self.nextnextrow = path_coords[2][0]
                         self.nextnextcol = path_coords[2][1]
                     else:
-                        self.nextnextrow = self.nextrow
-                        self.nextnextcol = self.nextcol
+                        self.nextnextrow = self.next_row
+                        self.nextnextcol = self.next_col
             
             print "avoid_list", 
             print self.avoid_list
