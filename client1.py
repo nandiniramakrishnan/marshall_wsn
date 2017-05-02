@@ -217,7 +217,7 @@ class DriverThread(Thread):
                     #reroute....
                     #reroute_coord = path_coords[1]; #potential collision at next (row, col)
                     reroute_coords = (int(msg[2]), int(msg[3]))
-                    if ((int(msg[2]), int(msg[3])) not in self.avoid_list):
+                    if ((int(msg[2]), int(msg[3])) not in self.avoid_list) and not (int(msg[2]) == self.dest_row and int(msg[3]) == self.dest_col):
                         self.avoid_list.append(reroute_coords)
                         rerouting = True
                     (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
