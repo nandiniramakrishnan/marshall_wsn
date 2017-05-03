@@ -6,9 +6,13 @@ import time
 import Queue
 
 server_address = ('', 10000)
-node_state = {'0':{'node_id':0, 'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'next_next_row': 0, 'next_next_col': 0 }, 
-        '1':{'node_id':1, 'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0, 'next_next_row': 1, 'next_next_col': 0 }, 
-        '2':{'node_id':2, 'curr_row': 3, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 3, 'next_col': 0, 'next_next_row': 3, 'next_next_col': 0 } }
+node_state = {'0':{'node_id':0, 'curr_row': 0, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 0, 'next_col': 0, 'next_next_row': 0, 'next_next_col': 0, 'stopped': ('0', 0), 'rerouting':0 }, 
+        '1':{'node_id':1, 'curr_row': 1, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 1, 'next_col': 0, 'next_next_row': 1, 'next_next_col': 0, 'stopped': ('0', 0), 'rerouting': 0 }, 
+        '2':{'node_id':2, 'curr_row': 2, 'curr_col': 0, 'curr_orient': 'E', 'next_row': 2, 'next_col': 0, 'next_next_row': 2, 'next_next_col': 0, 'stopped': ('0', 0), 'rerouting': 0 } }
+
+queue0 = Queue.Queue()
+queue1 = Queue.Queue()
+queue2 = Queue.Queue()
 
 class UserInterfaceThread(Thread):
     def __init__(self, queue):
@@ -56,6 +60,8 @@ class ClientThread(Thread):
             
             if not self.queue.empty():
                 command = self.queue.get()
+                if command == "GOOO":
+                    print "sending GOOO"
                 self.client.sendall(command)
             
             try:
@@ -68,6 +74,9 @@ class ClientThread(Thread):
                     node_state[self.node_id]['next_col'] = data[5]
                     node_state[self.node_id]['next_next_row'] = data[6]
                     node_state[self.node_id]['next_next_col'] = data[7]
+                    if node_state[self.node_id]['rerouting'] == 1:
+                        node_state[self.node_id]['rerouting'] = 0
+                        print "done rerouting"
                     print data
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
@@ -104,6 +113,16 @@ class Server:
         collision_pos_b = [node_b['next_row'], node_b['next_col']]
         collision_pos_next_b = [node_b['next_next_row'], node_b['next_next_col']]
 
+        if collision_pos_next_a == collision_pos_b:
+            print "next 0 == next next 1"
+            return collision_pos_next_a
+        elif collision_pos_next_a == collision_pos_next_b:
+            print "next next 0 == next next 1"
+            return collision_pos_next_a
+        else:
+            return None
+
+        '''
         if collision_pos_a == collision_pos_next_b:
             print "next 0 == next next 1"
             return (node_b['node_id'], collision_pos_a)
@@ -118,13 +137,16 @@ class Server:
             return (node_a['node_id'], collision_pos_next_a)
         else:
             return None
-
+        '''
     def run(self):
         # Server socket indicator
         server_up = False
         # Count for attempts to open server socket (max 3)
         try_count = 0
 
+        global queue0
+        global queue1
+        global queue2
 
         # Attempt to open socket
         while not server_up:
@@ -147,9 +169,6 @@ class Server:
                 time.sleep(10)
                 try_count += 1
         queue = Queue.Queue()
-        queue0 = Queue.Queue()
-        queue1 = Queue.Queue()
-        queue2 = Queue.Queue()
         print "Server is listening for incoming connections"
         ui_thread = UserInterfaceThread(queue)
         self.thread_list.append(ui_thread)
@@ -193,51 +212,44 @@ class Server:
                             self.avoid_list.append(avoid_msg)
                             for client in self.client_list:
                                 client.sendall("A"+avoid_msg)
-                #if ((node_state['0']['next_row'] == node_state['1']['next_row']) and (node_state['0']['next_col'] == node_state['1']['next_col'])):
-                #    queue0.put('STPR')
-                #    queue1.put('STOP')
-                #    print "pushed to the queues"
-                #if ((node_state['0']['next_row'] == node_state['2']['next_row']) and (node_state['0']['next_col'] == node_state['2']['next_col'])):
-                #    queue0.put('STPR')
-                #    queue2.put('STOP')
-                #if ((node_state['1']['next_row'] == node_state['2']['next_row']) and (node_state['1']['next_col'] == node_state['2']['next_col'])):
-                #    queue2.put('STOP')                    
-                #    queue1.put('STPR')
-                
+                    
+                for node_id, node_properties in node_state.iteritems():
+                    if node_properties['stopped'][1] == 1:
+                        print "node %s is stopped" % node_id
+                        print "because node %s was rerouting" % node_properties['stopped'][0]
+                        if node_state[node_properties['stopped'][0]]['rerouting'] == 0:
+                            print "node %s can continue now" % node_id
+                            node_properties['stopped'] = ('0', 0)
+                            globals()['queue'+node_id].put("GOOO")
+                            
                 collision01 = self.check_collision(node_state['0'], node_state['1'])
                 collision02 = self.check_collision(node_state['0'], node_state['2'])
                 collision12 = self.check_collision(node_state['1'], node_state['2'])
                 if collision01 != None:
-                    avoid_buf = ['S', 'R', str(collision01[1][0]), str(collision01[1][1])]
+                    avoid_buf = ['S', 'R', str(collision01[0]), str(collision01[1])]
                     avoid_msg = ''.join(avoid_buf)
-                    if collision01[0] == 0:
-                        queue0.put(avoid_msg)
-                        queue1.put('STOP')
-                    else:
-                        queue1.put(avoid_msg)
-                        queue0.put('STOP')
+                    queue0.put(avoid_msg)
+                    node_state['0']['rerouting'] = 1
+                    queue1.put('STOP')
+                    node_state['1']['stopped'] = ('0', 1)
                     print "collision detected! avoid_msg = %s" % avoid_msg
                 if collision02 != None:
-                    avoid_buf = ['S', 'R', str(collision02[1][0]), str(collision02[1][1])]
+                    avoid_buf = ['S', 'R', str(collision02[0]), str(collision02[1])]
                     avoid_msg = ''.join(avoid_buf)
-                    if collision02[0] == 0:
-                        queue0.put(avoid_msg)
-                        queue2.put('STOP')
-                    else:
-                        queue2.put(avoid_msg)
-                        queue0.put('STOP')
+                    queue0.put(avoid_msg)
+                    node_state['0']['rerouting'] = 1
+                    queue2.put('STOP')
+                    node_state['2']['stopped'] = ('0', 1)
                     print "collision detected! avoid_msg = %s" % avoid_msg
                 if collision12 != None:
-                    avoid_buf = ['S', 'R', str(collision12[1][0]), str(collision12[1][1])]
+                    avoid_buf = ['S', 'R', str(collision12[0]), str(collision12[1])]
                     avoid_msg = ''.join(avoid_buf)
-                    if collision12[0] == 1:
-                        queue1.put(avoid_msg)
-                        queue2.put('STOP')
-                    else:
-                        queue2.put(avoid_msg)
-                        queue1.put('STOP')
+                    queue1.put(avoid_msg)
+                    node_state['1']['rerouting'] = 1
+                    queue2.put('STOP')
+                    node_state['2']['stopped'] = ('1', 1)
                     print "collision detected! avoid_msg = %s" % avoid_msg
-                
+
                 try:
                     self.sock.settimeout(0.5)
                     client = self.sock.accept()[0]
