@@ -9,7 +9,7 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.143.235', 10000)
+server_address = ('128.237.214.180', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STPR"
 
@@ -60,6 +60,7 @@ class MarshallCommsThread(Thread):
         self.avoid_list_queue = avoid_list_queue
 
     def run(self):
+        stop_needed = 0
         while True:
                 
             # Listen data
@@ -86,6 +87,7 @@ class MarshallCommsThread(Thread):
                     print data
                     #print("stopping!")
                     #motors.setSpeeds(0,0)
+                    stop_needed = 1
                     new_buf = (data[0], data[1], data[2], data[3])
                     self.avoid_list_queue.put(new_buf)
                     #time.sleep(5)
@@ -98,6 +100,12 @@ class MarshallCommsThread(Thread):
                     self.avoid_list_queue.put(new_buf)
                     #time.sleep(3)
 
+                if data != None  and (data[0] == 'G'):
+                    print ("Received GOOO!")
+                    stop_needed = 0
+                    #new_buf = (data[0], data[1], data[2], data[3])
+                    #self.avoid_list_queue.put(new_buf)
+            
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
                     time.sleep(0.01)
@@ -172,7 +180,21 @@ class DriverThread(Thread):
                 #new avoid_list message
             
                 print msg
-                if (msg[0] == 'A'):
+                #while 
+                if (msg[0] == 'S' and msg[1] == 'T'):
+                    print("                 in stop")
+                    motors.setSpeeds(0,0)
+                    time.sleep(2)
+                    while stop_needed == 1:
+                        continue
+                    #while self.avoid_list_queue.empty()
+                    #go_msg = self.avoid_list_queue.get()
+                    #while (go_msg[0] != 'G'):
+                    #    motors.setSpeeds(0,0)
+                    #    time.sleep(2)
+
+
+                elif (msg[0] == 'A'):
                     print ("adding")
                     if (msg[1] != str(self.node_id) or msg[1] == 'D'):
                         if ((int(msg[2]), int(msg[3])) not in self.avoid_list):
@@ -205,10 +227,10 @@ class DriverThread(Thread):
                             else:
                                 self.nextnextrow = self.next_row
                                 self.nextnextcol = self.next_col
-                elif (msg[0] == 'S' and msg[1] == 'T'):
-                    print("                 in stop")
-                    motors.setSpeeds(0,0)
-                    time.sleep(2)
+                #elif (msg[0] == 'S' and msg[1] == 'T'):
+                #    print("                 in stop")
+                #    motors.setSpeeds(0,0)
+                #    time.sleep(2)
     
                 elif (msg[0] == 'S' and msg[1] =='R'):
                     print("in stopr")
@@ -397,10 +419,10 @@ class Node:
 if "__main__" == __name__:
     node_id = 0
     curr_row = 0
-    curr_col = 3
-    curr_orient = 'S'
+    curr_col = 0
+    curr_orient = 'E'
     next_row = 0
-    next_col = 3
+    next_col = 0
     avoid_list = []
     node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list)
     node.run()
