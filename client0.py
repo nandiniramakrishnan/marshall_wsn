@@ -9,7 +9,7 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.143.235', 10000)
+server_address = ('128.237.214.180', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STPR"
 
@@ -172,6 +172,11 @@ class DriverThread(Thread):
                 #new avoid_list message
             
                 print msg
+                while (msg[0] == 'S' and msg[1] == 'T'):
+                    print("                 in stop")
+                    motors.setSpeeds(0,0)
+                    time.sleep(2)
+
                 if (msg[0] == 'A'):
                     print ("adding")
                     if (msg[1] != str(self.node_id) or msg[1] == 'D'):
@@ -205,10 +210,10 @@ class DriverThread(Thread):
                             else:
                                 self.nextnextrow = self.next_row
                                 self.nextnextcol = self.next_col
-                elif (msg[0] == 'S' and msg[1] == 'T'):
-                    print("                 in stop")
-                    motors.setSpeeds(0,0)
-                    time.sleep(2)
+                #elif (msg[0] == 'S' and msg[1] == 'T'):
+                #    print("                 in stop")
+                #    motors.setSpeeds(0,0)
+                #    time.sleep(2)
     
                 elif (msg[0] == 'S' and msg[1] =='R'):
                     print("in stopr")
@@ -397,10 +402,10 @@ class Node:
 if "__main__" == __name__:
     node_id = 0
     curr_row = 0
-    curr_col = 3
-    curr_orient = 'S'
+    curr_col = 0
+    curr_orient = 'E'
     next_row = 0
-    next_col = 3
+    next_col = 0
     avoid_list = []
     node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list)
     node.run()
