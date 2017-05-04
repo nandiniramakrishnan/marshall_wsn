@@ -53,13 +53,14 @@ class SendThread(Thread):
 
 # This class sends messages to the Marshall while driving
 class MarshallCommsThread(Thread):
-    def __init__(self, sock, drive_comms_queue, node_id, command_queue, avoid_list_queue):
+    def __init__(self, sock, drive_comms_queue, node_id, command_queue, avoid_list_queue, red_light_queue):
         Thread.__init__(self)
         self.sock = sock
         self.drive_comms_queue = drive_comms_queue
         self.node_id = node_id
         self.command_queue = command_queue
         self.avoid_list_queue = avoid_list_queue
+        self.red_light_queue = red_light_queue
 
     def run(self):
         while True:
@@ -111,13 +112,15 @@ class MarshallCommsThread(Thread):
                     print('             received green')
                     #handle green light
                     if (int(data[2]), int(data[3])) in red_light_list:
-                        red_light_list.remove((int(data[2]), int(data[3])))        
+                        self.red_light_queue.put(("G", int(data[2]), int(data[3])))
+                    buf = ("S", "D", data[2], data[3])
+                    self.avoid_list_queue.put(buf)
 
                 if data != None and (data[0] == 'R') and (data[1] == 'R'):
                     print('             received red')
                     #handle red light
                     if (int(data[2]), int(data[3])) not in red_light_list:
-                        red_light_list.append((int(data[2]),int(data[3])))
+                        self.red_light_queue.put(("R", int(data[2]),int(data[3])))
 
             
             except socket.error as ex:
@@ -141,7 +144,7 @@ class MarshallCommsThread(Thread):
 # Communication with MARSHALL_COMMS_THREAD will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 class DriverThread(Thread):
-    def __init__(self, node_id, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, nextnextrow, nextnextcol):
+    def __init__(self, node_id, red_light_queue, red_light_list,  curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, nextnextrow, nextnextcol):
         Thread.__init__(self)
         self.node_id = node_id
         self.curr_row = curr_row
@@ -158,6 +161,9 @@ class DriverThread(Thread):
         self.send_queue = send_queue
         self.nextnextrow = nextnextrow
         self.nextnextcol = nextnextcol
+        self.red_light_queue = red_light_queue
+
+        self.red_light_list = red_light_list
     
     def run(self):
         rerouting = False
@@ -277,10 +283,32 @@ class DriverThread(Thread):
             print path_dirs
             next_orient = path_dirs[0] #will be "N" "S" "E" or "W"
 
+            while not self.red_light_queue.empty():
+                msg = self.red_light_queue.get()
+                #print("     red light msg:")
+                #print msg
+                if msg[0] == "R":
+                    self.red_light_list.append((msg[1], msg[2]))
+                if msg[0] == "G":
+                    if (msg[1],msg[2]) in self.red_light_list:
+                        self.red_light_list.remove((msg[1], msg[2]))
+
+            #print("red lgiht list:")
+            #print self.red_light_list
             #handle red lights
-            while (self.curr_col, self.curr_row) in red_light_list:
+            while (self.curr_row, self.curr_col) in self.red_light_list:
                 #motors.setSpeeds(0,0)
-                time.sleep(0.001)
+                #time.sleep(0.001)
+                #print self.red_light_list
+                while not self.red_light_queue.empty():
+                    msg = self.red_light_queue.get()
+                    #print("     red light msg:")
+                    #print msg
+                    if msg[0] == "R":
+                        self.red_light_list.append((msg[1], msg[2]))
+                    if msg[0] == "G":
+                        if (msg[1],msg[2]) in self.red_light_list:
+                            self.red_light_list.remove((msg[1], msg[2]))
                 
 
 
@@ -327,7 +355,7 @@ class DriverThread(Thread):
        
 # This is the Node class
 class Node:
-    def __init__(self, node_id, drivingState, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list):
+    def __init__(self, node_id, drivingState, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list, red_light_list):
         self.sock = None
         self.node_id = node_id
         self.drivingState = drivingState
@@ -340,6 +368,7 @@ class Node:
         self.nextnextrow = next_row
         self.nextnextcol = next_col
         self.avoid_list = avoid_list
+        self.red_light_list = red_light_list
 
     def run(self):
         # Create a TCP/IP Socket
@@ -357,6 +386,7 @@ class Node:
         update_node_queue = Queue.Queue()
         avoid_list_queue = Queue.Queue()
         send_queue = Queue.Queue()
+        red_light_queue = Queue.Queue()
         #
         quit_thread = QuitThread(quit_queue)
         self.thread_list.append(quit_thread)
@@ -393,7 +423,7 @@ class Node:
                 raise ex
         
         
-        marshall_comms_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id, command_queue, avoid_list_queue)  
+        marshall_comms_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id, command_queue, avoid_list_queue, red_light_queue)  
         self.thread_list.append(marshall_comms_thread)
         marshall_comms_thread.start()
         send_thread = SendThread(self.node_id, self.sock, send_queue)
@@ -409,7 +439,7 @@ class Node:
             if self.drivingState == False and not command_queue.empty():
                 print "gonna start driving!"
                 (dest_row, dest_col) = command_queue.get()
-                drivingThread = DriverThread(self.node_id, self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, self.nextnextrow, self.nextnextcol)
+                drivingThread = DriverThread(self.node_id, red_light_queue, self.red_light_list,  self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, self.nextnextrow, self.nextnextcol)
                 self.drivingState = True
                 self.thread_list.append(drivingThread)
                 drivingThread.start()
@@ -440,13 +470,14 @@ class Node:
 
 if "__main__" == __name__:
     node_id = 1
-    curr_row = 2
-    curr_col = 0
+    curr_row = 0
+    curr_col = 1
     curr_orient = 'E'
-    next_row = 2
-    next_col = 0
+    next_row = 0
+    next_col = 1
     avoid_list = []
-    node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list)
+    red_light_list = []
+    node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list, red_light_list)
     node.run()
     print "\nTerminated"
     os._exit(0)
