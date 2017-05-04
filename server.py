@@ -34,8 +34,8 @@ class UserInterfaceThread(Thread):
                 print "-\nINSTRUCTIONS:\nEnter a node followed by its destination's row and column\nCommand format: <node-index><row><col>\nExample: 012 # Node 0, Row 1, Col 2\n-"
             elif len(command) != 3:
                 print "Invalid length. Try again."
-            elif command[0] < '0' or command[0] > '2':
-                print "Invalid node. Try again."
+            elif (command[0] != 'G' and command[0] != 'R') and (command[0] < '0' or command[0] > '2'):
+                print "Invalid node. Try again. %s" % command[0]
             elif command[1] < '0' or command[1] > '4':
                 print "Invalid row. Try again."
             elif command[2] < '0' or command[2] > '6':
@@ -103,6 +103,7 @@ class Server:
         self.thread_list = []
         self.client_list = []
         self.avoid_list = []
+        self.stop_list = []
 
     def check_collision(self, node_a, node_b):   
 
@@ -187,6 +188,26 @@ class Server:
                             thread.join(1.0)
                         self.sock.close()
                         break
+                        
+                    if command[0] == 'G':
+                        stop_pos = (int(command[1]), int(command[2]))
+                        if stop_pos in self.stop_list:
+                            self.stop_list.remove(stop_pos)
+                        queue0.put("G"+command)
+                        queue1.put("G"+command)
+                        queue2.put("G"+command)
+                    if len(command) == 3 and command[0] == 'R':
+                        stop_pos = (int(command[1]), int(command[2]))
+                        if stop_pos not in self.stop_list:
+                            print "appending to avoid list"
+                            print stop_pos
+                            self.stop_list.append(stop_pos)
+                        queue0.put("R"+command)
+                        queue1.put("R"+command)
+                        queue2.put("R"+command)
+                    elif len(command) == 4 and command[0] == 'R':
+                        for client in self.client_list:
+                            client.sendall(command)
                     if command[0] == '0':
                         queue0.put(command)
                     elif command[0] == '1':
@@ -221,7 +242,14 @@ class Server:
                             print "node %s can continue now" % node_id
                             node_properties['stopped'] = ('0', 0)
                             globals()['queue'+node_id].put("GOOO")
-                            
+
+                for node_id, node_properties in node_state.iteritems():
+                    curr_pos = (node_properties['curr_row'], node_properties['curr_col'])
+                    if curr_pos in self.stop_list:
+                        for client in self.client_list:
+                            avoid_msg = "A"+node_id+str(node_properties['curr_row']+str(node_properties['curr_col']))
+                            print avoid_msg
+                            client.sendall(avoid_msg) 
                 collision01 = self.check_collision(node_state['0'], node_state['1'])
                 collision02 = self.check_collision(node_state['0'], node_state['2'])
                 collision12 = self.check_collision(node_state['1'], node_state['2'])
