@@ -16,6 +16,7 @@ import copy
 import operator
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_MCP3008
+import time
 
 CLK = 8
 MISO = 11
@@ -330,7 +331,8 @@ def findCoords(curr_row, curr_col, dest_row, dest_col, avoidList):
     path_found = 0
     paths = [[(curr_row, curr_col)]]
     paths_to_remove = []
-    
+    start = time.time()
+
     while path_found == 0:
         paths_queue = copy.deepcopy(paths)
         for path in paths_queue:
@@ -360,6 +362,10 @@ def findCoords(curr_row, curr_col, dest_row, dest_col, avoidList):
                         tmp_copy = copy.deepcopy(tmp_path)
                         paths.append(tmp_copy)
                         tmp_path.remove(adjacents[i])
+        cur_time = time.time()
+        if cur_time - start > 0.5:
+            return "Null"
+
 
 def coordsToPath(coords):
     path = []
@@ -384,5 +390,8 @@ def getDir(curLoc, nextLoc):
 
 def plan_path(curr_row, curr_col, dest_row, dest_col, avoidList):
     path_coords = findCoords(curr_row, curr_col, dest_row, dest_col, avoidList)
-    path_dirs = coordsToPath(path_coords)
-    return (path_coords, path_dirs)
+    if path_coords != "Null":
+        path_dirs = coordsToPath(path_coords)
+        return (path_coords, path_dirs)
+    else:
+        return ("Null", "Null")
