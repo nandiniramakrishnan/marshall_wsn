@@ -9,10 +9,11 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.214.180', 10000)
+server_address = ('128.237.209.71', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STPR"
 stop_needed = 0
+red_light_list = []
 
 class QuitThread(Thread):
     def __init__(self, queue):
@@ -105,6 +106,19 @@ class MarshallCommsThread(Thread):
                     stop_needed = 0
                     #new_buf = (data[0], data[1], data[2], data[3])
                     #self.avoid_list_queue.put(new_buf)
+
+                if data != None and (data[0] == 'G') and (data[1] == 'G'):
+                    print('             received green')
+                    #handle green light
+                    if (int(data[2]), int(data[3])) in red_light_list:
+                        red_light_list.remove((int(data[2]), int(data[3])))        
+
+                if data != None and (data[0] == 'R') and (data[1] == 'R'):
+                    print('             received red')
+                    #handle red light
+                    if (int(data[2]), int(data[3])) not in red_light_list:
+                        red_light_list.append((int(data[2]),int(data[3])))
+
             
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
@@ -262,6 +276,14 @@ class DriverThread(Thread):
             print "path dirs = ",
             print path_dirs
             next_orient = path_dirs[0] #will be "N" "S" "E" or "W"
+
+            #handle red lights
+            while (self.curr_col, self.curr_row) in red_light_list:
+                #motors.setSpeeds(0,0)
+                time.sleep(0.001)
+                
+
+
             if (DF.line_follow(self.curr_orient, next_orient) == 0):
                 #update curr and next locs
                 if len(path_coords) == 2:

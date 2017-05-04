@@ -75,7 +75,7 @@ def check_prox():
         else:
             true_val = 0
 #        print(true_val)
-        if (true_val < 11) and (true_val != 0):
+        if (true_val < 10) and (true_val != 0):
             block += 1
     if block > 3:
         #something is blocking!
