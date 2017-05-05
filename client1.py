@@ -9,7 +9,7 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.209.71', 10000)
+server_address = ('128.237.176.46', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STPR"
 stop_needed = 0
@@ -247,6 +247,7 @@ class DriverThread(Thread):
                                 self.nextnextrow = path_coords[0][0]
                                 self.nextnextcol = path_coords[0][1]
                             else:
+                                trapped = False
                                 self.next_row = path_coords[1][0]
                                 self.next_col = path_coords[1][1]
                                 if len(path_coords) > 2:
@@ -266,14 +267,25 @@ class DriverThread(Thread):
                             print ("removing from avoid list")
                             self.avoid_list.remove((int(msg[2]), int(msg[3]))) #remove row,col pair from list
                             (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-                            self.next_row = path_coords[1][0]
-                            self.next_col = path_coords[1][1]
-                            if len(path_coords) > 2:
-                                self.nextnextrow = path_coords[2][0]
-                                self.nextnextcol = path_coords[2][1]
+                            if path_coords == "Null":
+                                print("No path found")
+                                trapped = True
+                                path_coords = [(self.curr_row, self.curr_col)]
+                                path_dirs = []
+                                self.next_row = path_coords[0][0]
+                                self.next_col = path_coords[0][1]
+                                self.nextnextrow = path_coords[0][0]
+                                self.nextnextcol = path_coords[0][1]
                             else:
-                                self.nextnextrow = self.next_row
-                                self.nextnextcol = self.next_col
+                                trapped = False
+                                self.next_row = path_coords[1][0]
+                                self.next_col = path_coords[1][1]
+                                if len(path_coords) > 2:
+                                    self.nextnextrow = path_coords[2][0]
+                                    self.nextnextcol = path_coords[2][1]
+                                else:
+                                    self.nextnextrow = self.next_row
+                                    self.nextnextcol = self.next_col
                 #elif (msg[0] == 'S' and msg[1] == 'T'):
                 #    print("                 in stop")
                 #    motors.setSpeeds(0,0)
@@ -340,8 +352,7 @@ class DriverThread(Thread):
                         if (msg[1],msg[2]) in self.red_light_list:
                             self.red_light_list.remove((msg[1], msg[2]))
                 
-            if len(path_coords) > 1:
-                trapped = False
+            if len(path_coords) > 1 and trapped == False:
                 if (DF.line_follow(self.curr_orient, next_orient) == 0):
                     #update curr and next locs
                     if len(path_coords) == 2:
