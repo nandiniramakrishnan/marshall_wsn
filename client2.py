@@ -9,10 +9,11 @@ import os
 
 #initialize node 0 values
 # Server address
-server_address = ('128.237.214.180', 10000)
+server_address = ('128.237.176.46', 10000)
 STOPMSG = "STOP"
 STOPREROUTEMSG = "STPR"
 stop_needed = 0
+red_light_list = []
 
 class QuitThread(Thread):
     def __init__(self, queue):
@@ -52,13 +53,14 @@ class SendThread(Thread):
 
 # This class sends messages to the Marshall while driving
 class MarshallCommsThread(Thread):
-    def __init__(self, sock, drive_comms_queue, node_id, command_queue, avoid_list_queue):
+    def __init__(self, sock, drive_comms_queue, node_id, command_queue, avoid_list_queue, red_light_queue):
         Thread.__init__(self)
         self.sock = sock
         self.drive_comms_queue = drive_comms_queue
         self.node_id = node_id
         self.command_queue = command_queue
         self.avoid_list_queue = avoid_list_queue
+        self.red_light_queue = red_light_queue
 
     def run(self):
         while True:
@@ -76,7 +78,14 @@ class MarshallCommsThread(Thread):
                     dest_col = data[2]
                     self.command_queue.put((dest_row, dest_col))
            
-                if data != None  and (data[0] == 'A' or data[0] == 'R'):
+                if data != None and (data[0] == 'R') and (data[1] == 'R'):
+                    print('             received red')
+                    #handle red light
+                    if (int(data[2]), int(data[3])) not in red_light_list:
+                        # red_light_list.append((int(data[2]),int(data[3])))
+                        self.red_light_queue.put(("R", int(data[2]),int(data[3])))
+
+                if data != None  and len(data)==4 and (data[0] == 'A' or data[0] == 'R'):
                     print ("Received add or Remove from marshall!")
                     print(data)
                     new_buf = (data[0], data[1], data[2], data[3])
@@ -100,11 +109,21 @@ class MarshallCommsThread(Thread):
                     self.avoid_list_queue.put(new_buf)
                     #time.sleep(3)
 
-                if data != None  and (data[0] == 'G'):
+                if data != None  and (data[0] == 'G' and data[1] == 'O'):
                     print ("Received GOOO!")
                     stop_needed = 0
                     #new_buf = (data[0], data[1], data[2], data[3])
                     #self.avoid_list_queue.put(new_buf)
+
+                if data != None and (data[0] == 'G') and (data[1] == 'G'):
+                    print('             received green')
+                    #handle green light
+                    if (int(data[2]), int(data[3])) in red_light_list:
+                        self.red_light_queue.put(("G", int(data[2]), int(data[3])))
+                    buf = ("S", "D", data[2], data[3])
+                    self.avoid_list_queue.put(buf)
+
+
             
             except socket.error as ex:
                 if str(ex) == "[Errno 35] Resource temporarily unavailable":
@@ -127,7 +146,7 @@ class MarshallCommsThread(Thread):
 # Communication with MARSHALL_COMMS_THREAD will happen with argument "queue".
 # This function will call line following (all sensing and actuation code)
 class DriverThread(Thread):
-    def __init__(self, node_id, curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, nextnextrow, nextnextcol):
+    def __init__(self, node_id, red_light_queue, red_light_list,  curr_row, curr_col, curr_orient, next_row, next_col, dest_row, dest_col, avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, nextnextrow, nextnextcol):
         Thread.__init__(self)
         self.node_id = node_id
         self.curr_row = curr_row
@@ -144,29 +163,44 @@ class DriverThread(Thread):
         self.send_queue = send_queue
         self.nextnextrow = nextnextrow
         self.nextnextcol = nextnextcol
+        self.red_light_queue = red_light_queue
+
+        self.red_light_list = red_light_list
     
     def run(self):
         rerouting = False
+        trapped = False
         # Obtain directions to the destination and store in path
         (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-        print "path coords = ",
-        print path_coords
-        print "path dirs = ",
-        print path_dirs
-        self.next_row = path_coords[1][0]
-        self.next_col = path_coords[1][1]
-        #nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
-        #if nextDir == "Null":
-        #    nextDir = self.curr_orient
-        if len(path_coords) > 2:
-            self.nextnextrow = path_coords[2][0]
-            self.nextnextcol = path_coords[2][1]
+        if (path_coords == "Null" or len(path_coords) <2):
+            print("No path found")
+            trapped = True
+            #path_coords = [(self.curr_row, self.curr_col)]
+            #path_dirs = []
+        #if len(path_coords) < 2:
+            #self.next_row = path_coords[0][0]
+            #self.next_col = path_coords[0][1]
+            #self.nextnextrow = path_coords[0][0]
+            #self.nextnextcol = path_coords[0][1]
         else:
-            self.nextnextrow = self.next_row
-            self.nextnextcol = self.next_col
+            self.next_row = path_coords[1][0]
+            self.next_col = path_coords[1][1]
+            #nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
+            #if nextDir == "Null":
+            #    nextDir = self.curr_orient
+            if len(path_coords) > 2:
+                self.nextnextrow = path_coords[2][0]
+                self.nextnextcol = path_coords[2][1]
+            else:
+                self.nextnextrow = self.next_row
+                self.nextnextcol = self.next_col
+        print "initial path coords = ",
+        print path_coords
+        print "initial path dirs = ",
+        print path_dirs
         self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, self.nextnextrow, self.nextnextcol))
         msg = 'null'
-        while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and (len(path_coords) > 1):
+        while ((self.curr_col != self.dest_col) or (self.curr_row != self.dest_row)) and ((len(path_coords) > 1) or trapped == True):
             #time.sleep(1)
             print "in while loop"
             
@@ -201,17 +235,30 @@ class DriverThread(Thread):
                             print ("adding to avoid list")
                             self.avoid_list.append((int(msg[2]), int(msg[3]))) #add row,col pair to list
                             (path_coords, path_dirs) = DF.plan_path(self.curr_row, self.curr_col, self.dest_row, self.dest_col, self.avoid_list)
-                            self.next_row = path_coords[1][0]
-                            self.next_col = path_coords[1][1]
-                            if len(path_coords) > 2:
-                                self.nextnextrow = path_coords[2][0]
-                                self.nextnextcol = path_coords[2][1]
+                            print("path after adding",)
+                            print(path_coords)
+                            if path_coords == "Null":
+                                print("No path found")
+                                trapped = True
+                                path_coords = [(self.curr_row, self.curr_col)]
+                                path_dirs = []
+                                self.next_row = path_coords[0][0]
+                                self.next_col = path_coords[0][1]
+                                self.nextnextrow = path_coords[0][0]
+                                self.nextnextcol = path_coords[0][1]
                             else:
-                                self.nextnextrow = self.next_row
-                                self.nextnextcol = self.next_col
+                                self.next_row = path_coords[1][0]
+                                self.next_col = path_coords[1][1]
+                                if len(path_coords) > 2:
+                                    self.nextnextrow = path_coords[2][0]
+                                    self.nextnextcol = path_coords[2][1]
+                                else:
+                                    self.nextnextrow = self.next_row
+                                    self.nextnextcol = self.next_col
                 elif (msg[0] == 'R'):
+                    print ("removing")
                     if (msg[1] != str(self.node_id) or msg[1] == 'D'):
-                        if (self.avoid_list == [] or ((int(msg[2]), int(msg[3])) not in avoid_list)):
+                        if (self.avoid_list == [] or ((int(msg[2]), int(msg[3])) not in self.avoid_list)):
                             #do nothing
                             print("nothing to remove in avoidlist")
                             self.avoid_list = self.avoid_list
@@ -261,38 +308,71 @@ class DriverThread(Thread):
             print path_coords
             print "path dirs = ",
             print path_dirs
-            next_orient = path_dirs[0] #will be "N" "S" "E" or "W"
-            if (DF.line_follow(self.curr_orient, next_orient) == 0):
-                #update curr and next locs
-                if len(path_coords) == 2:
-                    self.next_row = path_coords[1][0]
-                    self.next_col = path_coords[1][1]
-                else:
-                    self.next_row = path_coords[2][0]
-                    self.next_col = path_coords[2][1]
-                self.curr_row = path_coords[1][0]
-                self.curr_col = path_coords[1][1]
-                self.curr_orient = path_dirs[0]
-                
-                if len(path_coords) > 3:
-                    self.nextnextrow = path_coords[3][0]
-                    self.nextnextcol = path_coords[3][1]
-                else:
-                    self.nextnextrow = self.next_row
-                    self.nextnextcol = self.next_col
-                #nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
-                #if nextDir == "Null":
-                #    nextDir = self.curr_orient
-                #update path coords and dirs
-                path_coords = path_coords[1:]
-                path_dirs = path_dirs[1:]
-
-                #self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
-                self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, self.nextnextrow, self.nextnextcol))
+            if path_dirs == []:
+                next_orient = self.curr_orient
             else:
-                #move was unsuccessful
-                print "went off grid, mission failed"
-                return
+                next_orient = path_dirs[0] #will be "N" "S" "E" or "W"
+
+            while not self.red_light_queue.empty():
+                msg = self.red_light_queue.get()
+                #print("     red light msg:")
+                #print msg
+                if msg[0] == "R":
+                    self.red_light_list.append((msg[1], msg[2]))
+                if msg[0] == "G":
+                    if (msg[1],msg[2]) in self.red_light_list:
+                        self.red_light_list.remove((msg[1], msg[2]))
+
+            #print("red lgiht list:")
+            #print self.red_light_list
+            #handle red lights
+            while (self.curr_row, self.curr_col) in self.red_light_list:
+                #motors.setSpeeds(0,0)
+                #time.sleep(0.001)
+                #print self.red_light_list
+                while not self.red_light_queue.empty():
+                    msg = self.red_light_queue.get()
+                    #print("     red light msg:")
+                    #print msg
+                    if msg[0] == "R":
+                        self.red_light_list.append((msg[1], msg[2]))
+                    if msg[0] == "G":
+                        if (msg[1],msg[2]) in self.red_light_list:
+                            self.red_light_list.remove((msg[1], msg[2]))
+                
+            if len(path_coords) > 1:
+                trapped = False
+                if (DF.line_follow(self.curr_orient, next_orient) == 0):
+                    #update curr and next locs
+                    if len(path_coords) == 2:
+                        self.next_row = path_coords[1][0]
+                        self.next_col = path_coords[1][1]
+                    else:
+                        self.next_row = path_coords[2][0]
+                        self.next_col = path_coords[2][1]
+                    self.curr_row = path_coords[1][0]
+                    self.curr_col = path_coords[1][1]
+                    self.curr_orient = path_dirs[0]
+                    
+                    if len(path_coords) > 3:
+                        self.nextnextrow = path_coords[3][0]
+                        self.nextnextcol = path_coords[3][1]
+                    else:
+                        self.nextnextrow = self.next_row
+                        self.nextnextcol = self.next_col
+                    #nextDir = DF.getDir((self.curr_row, self.curr_col), (self.next_row, self.next_col))
+                    #if nextDir == "Null":
+                    #    nextDir = self.curr_orient
+                    #update path coords and dirs
+                    path_coords = path_coords[1:]
+                    path_dirs = path_dirs[1:]
+
+                    #self.drive_comms_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, nextnextrow, nextnextcol))
+                    self.send_queue.put((self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, self.nextnextrow, self.nextnextcol))
+                else:
+                    #move was unsuccessful
+                    print "went off grid, mission failed"
+                    return
         #reached destination, update next and curr locs            
         self.curr_row = path_coords[0][0]
         self.curr_col = path_coords[0][1]
@@ -305,7 +385,7 @@ class DriverThread(Thread):
        
 # This is the Node class
 class Node:
-    def __init__(self, node_id, drivingState, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list):
+    def __init__(self, node_id, drivingState, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list, red_light_list):
         self.sock = None
         self.node_id = node_id
         self.drivingState = drivingState
@@ -318,6 +398,7 @@ class Node:
         self.nextnextrow = next_row
         self.nextnextcol = next_col
         self.avoid_list = avoid_list
+        self.red_light_list = red_light_list
 
     def run(self):
         # Create a TCP/IP Socket
@@ -335,6 +416,7 @@ class Node:
         update_node_queue = Queue.Queue()
         avoid_list_queue = Queue.Queue()
         send_queue = Queue.Queue()
+        red_light_queue = Queue.Queue()
         #
         quit_thread = QuitThread(quit_queue)
         self.thread_list.append(quit_thread)
@@ -371,7 +453,7 @@ class Node:
                 raise ex
         
         
-        marshall_comms_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id, command_queue, avoid_list_queue)  
+        marshall_comms_thread = MarshallCommsThread(self.sock, drive_comms_queue, self.node_id, command_queue, avoid_list_queue, red_light_queue)  
         self.thread_list.append(marshall_comms_thread)
         marshall_comms_thread.start()
         send_thread = SendThread(self.node_id, self.sock, send_queue)
@@ -387,7 +469,7 @@ class Node:
             if self.drivingState == False and not command_queue.empty():
                 print "gonna start driving!"
                 (dest_row, dest_col) = command_queue.get()
-                drivingThread = DriverThread(self.node_id, self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, self.nextnextrow, self.nextnextcol)
+                drivingThread = DriverThread(self.node_id, red_light_queue, self.red_light_list,  self.curr_row, self.curr_col, self.curr_orient, self.next_row, self.next_col, dest_row, dest_col, self.avoid_list, drive_comms_queue, update_node_queue, avoid_list_queue, send_queue, self.nextnextrow, self.nextnextcol)
                 self.drivingState = True
                 self.thread_list.append(drivingThread)
                 drivingThread.start()
@@ -424,7 +506,8 @@ if "__main__" == __name__:
     next_row = 2
     next_col = 0
     avoid_list = []
-    node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list)
+    red_light_list = []
+    node = Node(node_id, False, curr_row, curr_col, curr_orient, next_row, next_col, avoid_list, red_light_list)
     node.run()
     print "\nTerminated"
     os._exit(0)
